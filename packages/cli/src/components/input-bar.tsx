@@ -34,11 +34,6 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
     setSelectedIndex,
   } = useCommandMenu();
 
-  const handleCommandExecute = useCallback((index: number) => {
-    const command = resolveCommand(index);
-    handleCommand(command);
-  }, []);
-
   const handleTextAreaContentChange = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -75,6 +70,14 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
       }
     },
     [renderer],
+  );
+
+  const handleCommandExecute = useCallback(
+    (index: number) => {
+      const command = resolveCommand(index);
+      handleCommand(command);
+    },
+    [resolveCommand, handleCommand],
   );
 
   // Wire up the textarea submit handler once so it always reads the latest state.
