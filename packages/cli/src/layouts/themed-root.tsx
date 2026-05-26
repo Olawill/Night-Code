@@ -1,0 +1,20 @@
+import { useTheme } from "../providers/theme";
+
+type Props = {
+  children: React.ReactNode;
+};
+
+export const ThemedRoot = ({ children }: Props) => {
+  const { colors } = useTheme();
+
+  return (
+    <box
+      backgroundColor={colors.background}
+      width="100%"
+      height="100%"
+      flexGrow={1}
+    >
+      {children}
+    </box>
+  );
+};
