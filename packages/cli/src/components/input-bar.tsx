@@ -1,7 +1,7 @@
 import type { KeyBinding, TextareaRenderable } from "@opentui/core";
 import { useRenderer } from "@opentui/react";
 import { useCallback, useEffect, useRef } from "react";
-import { useDialog } from "../providers/dialog";
+import { Dialog, useDialog } from "../providers/dialog";
 import { useKeyboardLayer } from "../providers/keyboard-layer";
 import { useTheme } from "../providers/theme";
 import { useToast } from "../providers/toast";
@@ -79,7 +79,7 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
         textarea.insertText(command.value + " ");
       }
     },
-    [renderer, toast],
+    [renderer, toast, Dialog],
   );
 
   const handleCommandExecute = useCallback(
