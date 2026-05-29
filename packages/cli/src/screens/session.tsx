@@ -16,7 +16,12 @@ type SessionData = InferResponseType<
 
 const sessionLocationSchema = z.object({
   session: z.custom<SessionData>(
-    (val) => val != null && typeof val === "object" && "id" in val,
+    (val) =>
+      val != null &&
+      typeof val === "object" &&
+      "id" in val &&
+      "messages" in val &&
+      Array.isArray((val as { messages: unknown }).messages),
   ),
 });
 

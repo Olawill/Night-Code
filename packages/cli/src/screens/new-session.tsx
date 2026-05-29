@@ -42,7 +42,7 @@ export const NewSessionScreen = () => {
       try {
         const res = await apiClient.sessions.$post({
           json: {
-            title: state.message.slice(0, 100),
+            title: Array.from(state.message).slice(0, 100).join(""),
             cwd: process.cwd(),
             initialMessage: {
               role: "USER",

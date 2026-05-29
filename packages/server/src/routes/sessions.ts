@@ -2,7 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 
-import { db } from "@nightcode/database";
+import { db } from "@nightcode/database/client";
 import { MessageStatus, Mode, Role } from "@nightcode/database/enums";
 import { findSupportedChatModel } from "@nightcode/shared";
 
