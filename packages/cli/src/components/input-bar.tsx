@@ -1,8 +1,11 @@
 import type { KeyBinding, TextareaRenderable } from "@opentui/core";
-import { useRenderer } from "@opentui/react";
+import { useKeyboard, useRenderer } from "@opentui/react";
 import { useCallback, useEffect, useRef } from "react";
-import { Dialog, useDialog } from "../providers/dialog";
+import { useNavigate } from "react-router";
+
+import { useDialog } from "../providers/dialog";
 import { useKeyboardLayer } from "../providers/keyboard-layer";
+import { usePromptConfig } from "../providers/prompt-config";
 import { useTheme } from "../providers/theme";
 import { useToast } from "../providers/toast";
 import { EmptyBorder } from "./border";
@@ -27,10 +30,12 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
   const textareaRef = useRef<TextareaRenderable>(null);
   const onSubmitRef = useRef<() => void>(() => {});
   const renderer = useRenderer();
+  const navigate = useNavigate();
   const toast = useToast();
   const dialog = useDialog();
   const { isTopLayer, setResponder } = useKeyboardLayer();
-  const { colors } = useTheme();
+  const { colors, getModeColor } = useTheme();
+  const { mode, setMode, toggleMode, setModel } = usePromptConfig();
 
   const {
     commandQuery,
@@ -74,12 +79,16 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
           exit: () => renderer.destroy(),
           toast,
           dialog,
+          navigate,
+          mode,
+          setMode,
+          setModel,
         });
       } else {
         textarea.insertText(command.value + " ");
       }
     },
-    [renderer, toast, Dialog],
+    [renderer, toast, dialog, navigate, mode, setMode, setModel],
   );
 
   const handleCommandExecute = useCallback(
@@ -112,6 +121,15 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
     handleSubmit();
   };
 
+  useKeyboard((key) => {
+    if (disabled) return;
+    if (!isTopLayer("base")) return;
+    if (key.name === "tab") {
+      key.preventDefault();
+      toggleMode();
+    }
+  });
+
   // Register the base layer responder for Ctrl+c dismissal
   useEffect(() => {
     setResponder("base", () => {
@@ -132,7 +150,7 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
     <box width="100%" alignItems="center">
       <box
         border={["left"]}
-        borderColor={colors.primary}
+        borderColor={getModeColor(mode)}
         customBorderChars={{
           ...EmptyBorder,
           vertical: "┃",

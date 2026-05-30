@@ -14,7 +14,7 @@ type Props = {
   interrupted?: boolean;
 };
 
-const showSentenceCase = (val: unknown) => {
+export const showSentenceCase = (val: unknown) => {
   const valStr = String(val);
   return valStr.at(0)?.toUpperCase() + valStr.slice(1).toLowerCase();
 };
@@ -27,7 +27,7 @@ export const BotMessage = ({
   streaming = false,
   interrupted = false,
 }: Props) => {
-  const { colors } = useTheme();
+  const { colors, getModeColor } = useTheme();
   const text = parts
     .filter((p) => p.type === "text")
     .map((p) => p.text)
@@ -45,13 +45,7 @@ export const BotMessage = ({
         <box flexDirection="row" gap={2}>
           <text
             attributes={interrupted ? TextAttributes.DIM : 0}
-            fg={
-              interrupted
-                ? undefined
-                : mode === Mode.PLAN
-                  ? colors.planMode
-                  : colors.primary
-            }
+            fg={interrupted ? undefined : getModeColor(mode)}
           >
             ◉
           </text>

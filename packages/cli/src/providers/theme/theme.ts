@@ -1,6 +1,9 @@
 export type ThemeColors = {
   primary: string;
   planMode: string;
+  docMode: string;
+  reviewMode: string;
+  testMode: string;
   selection: string;
   thinking: string;
   success: string;
@@ -24,6 +27,9 @@ export const THEMES: Theme[] = [
     colors: {
       primary: "#56D6C2",
       planMode: "#CF8EF4",
+      docMode: "#89B4FA",
+      reviewMode: "#F0C070",
+      testMode: "#82E0AA",
       selection: "#89B4FA",
       thinking: "#CF8EF4",
       success: "#82E0AA",
@@ -36,13 +42,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#4E4E66",
     },
   },
-
   {
-    // Primary hue: TEAL — deep black bg
     name: "Foxxy",
     colors: {
       primary: "#3DDCB8",
       planMode: "#B975F0",
+      docMode: "#5E9FF5",
+      reviewMode: "#F0B840",
+      testMode: "#6FD98A",
       selection: "#5E9FF5",
       thinking: "#B975F0",
       success: "#6FD98A",
@@ -55,13 +62,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#3E3E60",
     },
   },
-
   {
-    // Primary hue: PINK — warm mauve bg
     name: "Catppuccin Mocha",
     colors: {
       primary: "#F5A8D4",
       planMode: "#B48EF5",
+      docMode: "#84D0E3",
+      reviewMode: "#F0C97A",
+      testMode: "#93D07F",
       selection: "#74C9C0",
       thinking: "#F0C97A",
       success: "#93D07F",
@@ -74,13 +82,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#565475",
     },
   },
-
   {
-    // Primary hue: PURPLE — mid blue-grey bg (iconic Dracula, unchanged)
     name: "Dracula",
     colors: {
       primary: "#BD93F9",
       planMode: "#FF79C6",
+      docMode: "#8BE9FD",
+      reviewMode: "#FFB86C",
+      testMode: "#50FA7B",
       selection: "#6272A4",
       thinking: "#FFB86C",
       success: "#50FA7B",
@@ -93,13 +102,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#6272A4",
     },
   },
-
   {
-    // Primary hue: BLUE — near-black indigo bg (iconic Tokyo Night, unchanged)
     name: "Tokyo Night",
     colors: {
       primary: "#6A9FFF",
       planMode: "#A07DE0",
+      docMode: "#5BBDF5",
+      reviewMode: "#D4A040",
+      testMode: "#80C244",
       selection: "#1FBDD5",
       thinking: "#D4A040",
       success: "#80C244",
@@ -112,13 +122,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#464B78",
     },
   },
-
   {
-    // Primary hue: AMBER/ORANGE — warm brown bg (classic Gruvbox feel)
     name: "Gruvbox Dark",
     colors: {
       primary: "#D4844A",
       planMode: "#C077AE",
+      docMode: "#78B88C",
+      reviewMode: "#F5B820",
+      testMode: "#A8B018",
       selection: "#689058",
       thinking: "#F5B820",
       success: "#A8B018",
@@ -131,13 +142,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#5A5248",
     },
   },
-
   {
-    // Primary hue: ICY BLUE — blue-grey bg (iconic Nord, unchanged)
     name: "Nord",
     colors: {
       primary: "#80D0E8",
       planMode: "#C0A0D0",
+      docMode: "#4A70A0",
+      reviewMode: "#F0D890",
+      testMode: "#90C880",
       selection: "#6E98C8",
       thinking: "#F0D890",
       success: "#90C880",
@@ -150,13 +162,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#465870",
     },
   },
-
   {
-    // Primary hue: TEAL — charcoal bg
     name: "One Dark Pro",
     colors: {
       primary: "#2DC8B0",
       planMode: "#C060D8",
+      docMode: "#60A8E8",
+      reviewMode: "#DDB050",
+      testMode: "#7EBE58",
       selection: "#40B8A8",
       thinking: "#DDB050",
       success: "#7EBE58",
@@ -169,13 +182,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#424A5A",
     },
   },
-
   {
-    // Primary hue: GOLD/WARM YELLOW — dark ink bg
     name: "Kanagawa",
     colors: {
       primary: "#C8A840",
       planMode: "#957FB8",
+      docMode: "#6898C8",
+      reviewMode: "#E07830",
+      testMode: "#7CAA50",
       selection: "#508880",
       thinking: "#E07830",
       success: "#7CAA50",
@@ -188,13 +202,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#404060",
     },
   },
-
   {
-    // Primary hue: OCEAN BLUE — deep teal bg (iconic Solarized, unchanged)
     name: "Solarized Dark",
     colors: {
       primary: "#1E8AC8",
       planMode: "#CC2878",
+      docMode: "#2090B8",
+      reviewMode: "#A87800",
+      testMode: "#709800",
       selection: "#1E9888",
       thinking: "#A87800",
       success: "#709800",
@@ -207,13 +222,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#507580",
     },
   },
-
   {
-    // Primary hue: ROSE/DUSTY RED — deep purple bg
     name: "Rose Pine",
     colors: {
       primary: "#E8829A",
       planMode: "#C4A7E7",
+      docMode: "#9CCFD8",
+      reviewMode: "#F6C177",
+      testMode: "#7EC8A0",
       selection: "#31748F",
       thinking: "#F6C177",
       success: "#9CCFD8",
@@ -226,13 +242,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#483C68",
     },
   },
-
   {
-    // Primary hue: ELECTRIC CYAN — slate-teal bg
     name: "Ayu Mirage",
     colors: {
       primary: "#55C8FF",
       planMode: "#C0AAFF",
+      docMode: "#80E0C0",
+      reviewMode: "#F8C840",
+      testMode: "#98D030",
       selection: "#40C0D8",
       thinking: "#F8C840",
       success: "#98D030",
@@ -245,13 +262,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#405070",
     },
   },
-
   {
-    // Primary hue: JADE GREEN — cool purple-navy bg
     name: "Palenight",
     colors: {
       primary: "#52D68A",
       planMode: "#C792EA",
+      docMode: "#60C8E8",
+      reviewMode: "#F0B840",
+      testMode: "#A8D870",
       selection: "#60C8E8",
       thinking: "#F0B840",
       success: "#A8D870",
@@ -264,13 +282,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#504E78",
     },
   },
-
   {
-    // Primary hue: COBALT BLUE — near-black bg (darker than all other blues)
     name: "Material Ocean",
     colors: {
       primary: "#5898FF",
       planMode: "#C080E8",
+      docMode: "#70C8FF",
+      reviewMode: "#FFB840",
+      testMode: "#A8D870",
       selection: "#55B8B0",
       thinking: "#FFB840",
       success: "#A8D870",
@@ -283,13 +302,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#283048",
     },
   },
-
   {
-    // Primary hue: NEON ORANGE — dark purple bg
     name: "Synthwave '84",
     colors: {
       primary: "#FF8C00",
       planMode: "#FF50D8",
+      docMode: "#36F9F6",
+      reviewMode: "#F8F040",
+      testMode: "#40F0A8",
       selection: "#40F0A8",
       thinking: "#F8F040",
       success: "#40F0A8",
@@ -302,13 +322,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#503A78",
     },
   },
-
   {
-    // Primary hue: VERMILLION RED — warm charcoal bg
     name: "Monokai Pro",
     colors: {
       primary: "#FF5C48",
       planMode: "#AB9DF2",
+      docMode: "#78DCE8",
+      reviewMode: "#FFD866",
+      testMode: "#A9DC76",
       selection: "#A9DC76",
       thinking: "#FFD866",
       success: "#A9DC76",
@@ -321,13 +342,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#585060",
     },
   },
-
   {
-    // Primary hue: BRIGHT BLUE — jet black bg (iconic GitHub Dark, unchanged)
     name: "GitHub Dark",
     colors: {
       primary: "#4898FF",
       planMode: "#A870FF",
+      docMode: "#60B8FF",
+      reviewMode: "#D8A830",
+      testMode: "#28B040",
       selection: "#60B8FF",
       thinking: "#D8A830",
       success: "#28B040",
@@ -340,13 +362,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#384050",
     },
   },
-
   {
-    // Primary hue: MUTED TEAL/SAGE — earthy green bg
     name: "Everforest Dark",
     colors: {
       primary: "#60B0A8",
       planMode: "#D699B6",
+      docMode: "#5A9AB0",
+      reviewMode: "#C8A848",
+      testMode: "#88AA60",
       selection: "#68A878",
       thinking: "#C8A848",
       success: "#88AA60",
@@ -359,13 +382,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#485C54",
     },
   },
-
   {
-    // Primary hue: CORAL/ORANGE-RED — dark near-black bg
     name: "Horizon",
     colors: {
       primary: "#FF6B4A",
       planMode: "#EE64AE",
+      docMode: "#26BBD9",
+      reviewMode: "#FAB795",
+      testMode: "#29D398",
       selection: "#29D398",
       thinking: "#FAB795",
       success: "#29D398",
@@ -378,13 +402,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#383848",
     },
   },
-
   {
-    // Primary hue: HOT MAGENTA — very dark blue-black bg
     name: "Cyberpunk",
     colors: {
       primary: "#FF2D9B",
       planMode: "#00F5D4",
+      docMode: "#00BBF9",
+      reviewMode: "#FEE440",
+      testMode: "#70E000",
       selection: "#00BBF9",
       thinking: "#FEE440",
       success: "#70E000",
@@ -397,13 +422,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#203050",
     },
   },
-
   {
-    // Primary hue: RUST/COPPER — lighter navy bg
     name: "Tokyo Storm",
     colors: {
       primary: "#D4724A",
       planMode: "#BB9AF7",
+      docMode: "#7AA2F7",
+      reviewMode: "#E0AF68",
+      testMode: "#9ECE6A",
       selection: "#2AC3DE",
       thinking: "#E0AF68",
       success: "#9ECE6A",
@@ -416,13 +442,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#4A5080",
     },
   },
-
   {
-    // Primary hue: MINT GREEN — pure black bg
     name: "Vesper",
     colors: {
       primary: "#70FFDC",
       planMode: "#FFB0D8",
+      docMode: "#70D0FF",
+      reviewMode: "#FFB870",
+      testMode: "#80F0C0",
       selection: "#80F0C0",
       thinking: "#FFB870",
       success: "#80F0C0",
@@ -435,13 +462,14 @@ export const THEMES: Theme[] = [
       dimSeparator: "#383838",
     },
   },
-
   {
-    // Primary hue: VIOLET — medium-dark purple bg
     name: "Moonlight",
     colors: {
       primary: "#9B6DFF",
       planMode: "#FF9AC1",
+      docMode: "#65BCFF",
+      reviewMode: "#FFC777",
+      testMode: "#C3E88D",
       selection: "#70D8F8",
       thinking: "#FFC777",
       success: "#C3E88D",

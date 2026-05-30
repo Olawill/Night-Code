@@ -1,3 +1,4 @@
+import { Mode } from "@nightcode/database/enums";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -52,6 +53,7 @@ type ThemeContextValue = {
   colors: ThemeColors;
   currentTheme: Theme;
   setTheme: (theme: Theme) => void;
+  getModeColor: (mode: Mode) => string;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -72,10 +74,32 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     persistTheme(theme);
   }, []);
 
+  const getModeColor = useCallback(
+    (mode: Mode): string => {
+      const { colors } = currentTheme;
+      switch (mode) {
+        case Mode.BUILD:
+          return colors.primary;
+        case Mode.PLAN:
+          return colors.planMode;
+        case Mode.DOC:
+          return colors.docMode;
+        case Mode.REVIEW:
+          return colors.reviewMode;
+        case Mode.TEST:
+          return colors.testMode;
+        default:
+          return colors.primary;
+      }
+    },
+    [currentTheme],
+  );
+
   const value: ThemeContextValue = {
     colors: currentTheme.colors,
     currentTheme,
     setTheme,
+    getModeColor,
   };
 
   return (
