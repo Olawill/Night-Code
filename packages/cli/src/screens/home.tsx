@@ -1,17 +1,20 @@
 import { useCallback } from "react";
-import { NavigationType, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
+import { TextAttributes } from "@opentui/core";
 import { Header } from "../components/header";
 import { InputBar } from "../components/input-bar";
+import { usePromptConfig } from "../providers/prompt-config";
 
 export const HomeScreen = () => {
   const navigate = useNavigate();
+  const { mode, model } = usePromptConfig();
 
   const handleSubmit = useCallback(
     (text: string) => {
-      navigate("/sessions/new", { state: { message: text } });
+      navigate("/sessions/new", { state: { message: text, mode, model } });
     },
-    [NavigationType],
+    [navigate, mode, model],
   );
 
   return (
@@ -25,8 +28,18 @@ export const HomeScreen = () => {
       height="100%"
     >
       <Header />
-      <box width="100%" maxWidth={78} paddingX={2}>
+      <box
+        width="100%"
+        maxWidth={78}
+        paddingX={2}
+        flexDirection="column"
+        gap={1}
+      >
         <InputBar onSubmit={handleSubmit} />
+        <box flexDirection="row" gap={1} flexShrink={0} marginLeft="auto">
+          <text>tab</text>
+          <text attributes={TextAttributes.DIM}>agents</text>
+        </box>
       </box>
     </box>
   );

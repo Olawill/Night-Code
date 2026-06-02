@@ -1,6 +1,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
+import type { ProviderOptions } from "@ai-sdk/provider-utils";
 import type { LanguageModel } from "ai";
 import { ollama } from "ai-sdk-ollama";
 
@@ -28,7 +29,71 @@ export type ResolvedModel = {
   model: LanguageModel;
   provider: SupportedProvider;
   modelId: SupportedChatModelId;
+  providerOptions?: ProviderOptions;
 };
+
+const ANTHROPIC_PROVIDER_OPTIONS: Partial<
+  Record<AnthropicModelId, ProviderOptions>
+> = {
+  "claude-opus-4-6": {
+    anthropic: {
+      thinking: {
+        type: "enabled",
+        budgetTokens: 10000,
+      },
+    },
+  },
+  "claude-sonnet-4-6": {
+    anthropic: {
+      thinking: {
+        type: "enabled",
+        budgetTokens: 10000,
+      },
+    },
+  },
+};
+
+const OPENAI_PROVIDER_OPTIONS: Partial<Record<OpenAIModelId, ProviderOptions>> =
+  {
+    "gpt-5.4": {
+      openai: {
+        reasoningEffort: "medium",
+      },
+    },
+    "gpt-5.4-mini": {
+      openai: {
+        reasoningEffort: "medium",
+      },
+    },
+    "gpt-5.4-nano": {
+      openai: {
+        reasoningEffort: "medium",
+      },
+    },
+  };
+
+const GOOGLE_PROVIDER_OPTIONS: Partial<Record<GoogleModelId, ProviderOptions>> =
+  {
+    "gemini-2.5-flash": {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 10000,
+          includeThoughts: true,
+        },
+      },
+    },
+  };
+
+const OLLAMA_PROVIDER_OPTIONS: Partial<Record<OllamaModelId, ProviderOptions>> =
+  {
+    "minimax-m2.7:cloud": {
+      ollama: {
+        headers: {
+          think: "medium",
+        },
+      },
+    },
+  };
 
 const assertUnsupportedProvider = (provider: never): never => {
   throw new Error(`Unsupported provider: ${provider}`);
@@ -39,6 +104,7 @@ const resolveAnthropicModel = (modelId: AnthropicModelId): ResolvedModel => {
     model: anthropic(modelId),
     provider: "anthropic",
     modelId,
+    providerOptions: ANTHROPIC_PROVIDER_OPTIONS[modelId],
   };
 };
 
@@ -47,6 +113,7 @@ const resolveOpenAIModel = (modelId: OpenAIModelId): ResolvedModel => {
     model: openai(modelId),
     provider: "openai",
     modelId,
+    providerOptions: OPENAI_PROVIDER_OPTIONS[modelId],
   };
 };
 
@@ -55,6 +122,7 @@ const resolveGoogleModel = (modelId: GoogleModelId): ResolvedModel => {
     model: google(modelId),
     provider: "google",
     modelId,
+    providerOptions: GOOGLE_PROVIDER_OPTIONS[modelId],
   };
 };
 
@@ -63,6 +131,7 @@ const resolveOllamaModel = (modelId: OllamaModelId): ResolvedModel => {
     model: ollama(modelId),
     provider: "ollama",
     modelId,
+    providerOptions: OLLAMA_PROVIDER_OPTIONS[modelId],
   };
 };
 

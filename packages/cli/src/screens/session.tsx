@@ -5,16 +5,23 @@ import { useLocation, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 
 import { MessageStatus } from "@nightcode/database/enums";
-import type { SupportedChatModelId } from "@nightcode/shared";
+import {
+  messagePartsSchema,
+  type SupportedChatModelId,
+} from "@nightcode/shared";
 import { useKeyboard } from "@opentui/react";
 import { keyframes } from "hono/css";
-import { DEFAULT_CHAT_MODEL_ID } from "../../../shared/src/models";
 import { BotMessage, ErrorMessage, UserMessage } from "../components/messages";
 import { SessionShell } from "../components/session-shell";
-import { useChat, type Message } from "../hooks/use-chat";
+import {
+  useChat,
+  type ClientMessagePart,
+  type Message,
+} from "../hooks/use-chat";
 import { apiClient } from "../lib/api-client";
 import { getErrorMessage } from "../lib/http-errors";
 import { useKeyboardLayer } from "../providers/keyboard-layer";
+import { usePromptConfig } from "../providers/prompt-config";
 import { useToast } from "../providers/toast";
 
 type SessionData = InferResponseType<
@@ -53,13 +60,21 @@ const mapDbMessages = (dbMessages: SessionData["messages"]): Message[] => {
       };
     }
 
+    const parsedParts =
+      m.parts == null ? null : messagePartsSchema.safeParse(m.parts);
+    const parts: ClientMessagePart[] = parsedParts?.success
+      ? parsedParts.data.map((p) =>
+          p.type === "tool-call" ? { ...p, status: "done" as const } : p,
+        )
+      : [];
+
     return {
       id: m.id,
       role: "assistant",
       content: m.content,
       mode: m.mode,
       model: m.model as SupportedChatModelId,
-      parts: [{ type: "text", text: m.content }],
+      parts,
       ...(m.duration != null ? { duration: prettyMs(m.duration * 1000) } : {}),
       interrupted: m.status === MessageStatus.INTERRUPTED,
     };
@@ -68,7 +83,7 @@ const mapDbMessages = (dbMessages: SessionData["messages"]): Message[] => {
 
 const ChatMessage = ({ msg }: ChatMessageProps) => {
   if (msg.role === "user") {
-    return <UserMessage message={msg.content} />;
+    return <UserMessage message={msg.content} mode={msg.mode} />;
   }
 
   if (msg.role === "error") {
@@ -89,6 +104,7 @@ const ChatMessage = ({ msg }: ChatMessageProps) => {
 
 const SessionChat = ({ session }: { session: SessionData }) => {
   const [initialMessages] = useState(() => mapDbMessages(session.messages));
+  const { mode, model } = usePromptConfig();
   const { isTopLayer } = useKeyboardLayer();
   const { messages, streaming, submit, abort, interrupt } = useChat(
     session.id,
@@ -114,9 +130,7 @@ const SessionChat = ({ session }: { session: SessionData }) => {
 
   return (
     <SessionShell
-      onSubmit={(text) =>
-        submit({ userText: text, mode: "BUILD", model: DEFAULT_CHAT_MODEL_ID })
-      }
+      onSubmit={(text) => submit({ userText: text, mode, model })}
       loading={streaming.status === "streaming"}
       interruptible={streaming.status === "streaming"}
     >

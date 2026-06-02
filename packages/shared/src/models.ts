@@ -69,7 +69,7 @@ export const SUPPORTED_CHAT_MODELS = [
     },
   },
   {
-    id: "gemini-3.0-flash",
+    id: "gemini-2.0-flash",
     provider: "google",
     pricing: {
       inputUsdPerMillionTokens: 0.2,
@@ -78,6 +78,14 @@ export const SUPPORTED_CHAT_MODELS = [
   },
   {
     id: "minimax-m2.7:cloud",
+    provider: "ollama",
+    pricing: {
+      inputUsdPerMillionTokens: 0.02,
+      outputUsdPerMillionTokens: 0.25,
+    },
+  },
+  {
+    id: "gemma4:31b-cloud",
     provider: "ollama",
     pricing: {
       inputUsdPerMillionTokens: 0.02,
@@ -93,4 +101,5 @@ export const findSupportedChatModel = (modelId: string) => {
   return SUPPORTED_CHAT_MODELS.find((model) => model.id === modelId);
 };
 
-export const DEFAULT_CHAT_MODEL_ID: SupportedChatModelId = "claude-opus-4-6";
+// export const DEFAULT_CHAT_MODEL_ID: SupportedChatModelId = "claude-opus-4-6";
+export const DEFAULT_CHAT_MODEL_ID: SupportedChatModelId = "gemini-2.5-flash";

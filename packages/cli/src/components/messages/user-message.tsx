@@ -1,18 +1,20 @@
+import type { Mode } from "@nightcode/database/enums";
 import { useTheme } from "../../providers/theme";
 import { SplitBorder } from "../border";
 
 type Props = {
   message: string;
+  mode: Mode;
 };
 
-export const UserMessage = ({ message }: Props) => {
-  const { colors } = useTheme();
+export const UserMessage = ({ message, mode }: Props) => {
+  const { colors, getModeColor } = useTheme();
 
   return (
     <box width="100%" alignItems="center">
       <box
         border={["left"]}
-        borderColor={colors.primary}
+        borderColor={getModeColor(mode)}
         width="100%"
         customBorderChars={{ ...SplitBorder.customBorderChars }}
       >

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { z } from "zod";
 
-import { DEFAULT_CHAT_MODEL_ID } from "@nightcode/shared";
+import { Mode } from "@nightcode/database/enums";
 import { UserMessage } from "../components/messages";
 import { SessionShell } from "../components/session-shell";
 import { apiClient } from "../lib/api-client";
@@ -11,6 +11,8 @@ import { useToast } from "../providers/toast";
 
 const newSessionStateSchema = z.object({
   message: z.string(),
+  mode: z.enum(Mode),
+  model: z.string(),
 });
 
 export const NewSessionScreen = () => {
@@ -47,8 +49,8 @@ export const NewSessionScreen = () => {
             initialMessage: {
               role: "USER",
               content: state.message,
-              mode: "BUILD",
-              model: DEFAULT_CHAT_MODEL_ID,
+              mode: state.mode,
+              model: state.model,
             },
           },
         });
@@ -87,12 +89,7 @@ export const NewSessionScreen = () => {
 
   return (
     <SessionShell onSubmit={() => {}} inputDisabled loading>
-      <UserMessage message={state.message} />
-      {/* <BotMessage
-        content="This is sample bot response to demonstrate the message layout."
-        model="opus-4-6"
-      /> */}
-      {/* <ErrorMessage message="This is sample error message." /> */}
+      <UserMessage message={state.message} mode={state.mode} />
     </SessionShell>
   );
 };
