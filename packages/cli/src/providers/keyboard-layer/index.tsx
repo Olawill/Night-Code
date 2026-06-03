@@ -9,7 +9,7 @@ import {
 
 type Responder = () => boolean;
 
-type KeyboardLayerId = "base" | "command" | "dialog";
+type KeyboardLayerId = "base" | "command" | "dialog" | "mention";
 
 type KeyboardLayerContextValue = {
   push: (id: KeyboardLayerId, responder?: Responder) => void;

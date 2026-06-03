@@ -92,6 +92,14 @@ export const SUPPORTED_CHAT_MODELS = [
       outputUsdPerMillionTokens: 0.25,
     },
   },
+  {
+    id: "minimax-m3:cloud",
+    provider: "ollama",
+    pricing: {
+      inputUsdPerMillionTokens: 0.02,
+      outputUsdPerMillionTokens: 0.25,
+    },
+  },
 ] as const satisfies readonly SupportedChatModelDefinition[];
 
 export type SupportedChatModel = (typeof SUPPORTED_CHAT_MODELS)[number];

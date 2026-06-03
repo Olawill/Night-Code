@@ -93,6 +93,20 @@ const OLLAMA_PROVIDER_OPTIONS: Partial<Record<OllamaModelId, ProviderOptions>> =
         },
       },
     },
+    "minimax-m3:cloud": {
+      ollama: {
+        headers: {
+          think: "medium",
+        },
+      },
+    },
+    "gemma4:31b-cloud": {
+      ollama: {
+        headers: {
+          think: "medium",
+        },
+      },
+    },
   };
 
 const assertUnsupportedProvider = (provider: never): never => {

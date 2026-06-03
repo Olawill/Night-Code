@@ -14,6 +14,7 @@ import {
   type MessagePart,
 } from "@nightcode/shared";
 import { isSupportedChatModel, resolveChatModel } from "../lib/models";
+import type { AuthenticatedEnv } from "../middleware/require-auth";
 import { buildSystemPrompt } from "../system-prompt";
 import { createTools } from "../tools";
 
@@ -269,12 +270,13 @@ const streamAIResponse = async (
   }
 };
 
-const app = new Hono()
+const app = new Hono<AuthenticatedEnv>()
   .post("/:sessionId/resume", async (c) => {
     const sessionId = c.req.param("sessionId");
+    const userId = c.get("userId");
 
     const session = await db.session.findUnique({
-      where: { id: sessionId },
+      where: { id: sessionId, userId },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     });
 
@@ -343,9 +345,10 @@ const app = new Hono()
   })
   .post("/:sessionId", submitValidator, async (c) => {
     const sessionId = c.req.param("sessionId");
+    const userId = c.get("userId");
 
     const session = await db.session.findUnique({
-      where: { id: sessionId },
+      where: { id: sessionId, userId },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     });
 

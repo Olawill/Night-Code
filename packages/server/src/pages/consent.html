@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Authorize — Nightcode</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0a0a0f;
+        --surface: #111118;
+        --surface-2: #1a1a24;
+        --border: rgba(255, 255, 255, 0.07);
+        --border-hover: rgba(255, 255, 255, 0.12);
+        --text-primary: #f0eff8;
+        --text-secondary: #8b8a9a;
+        --text-hint: #55546a;
+        --accent: #7c6aff;
+        --accent-hover: #9080ff;
+        --accent-dim: rgba(124, 106, 255, 0.12);
+        --danger: #ff6b6b;
+        --danger-dim: rgba(255, 107, 107, 0.1);
+        --success-dim: rgba(74, 222, 128, 0.1);
+        --success: #4ade80;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text-primary);
+        font-family: "DM Sans", sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 440px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        overflow: hidden;
+      }
+
+      /* Header strip */
+      .card-header {
+        padding: 2rem 2rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+      }
+
+      .card-header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent), #a78bfa);
+      }
+
+      .app-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 1.25rem;
+      }
+
+      .app-icon {
+        width: 52px;
+        height: 52px;
+        background: var(--accent-dim);
+        border: 1px solid rgba(124, 106, 255, 0.2);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .app-icon svg {
+        width: 26px;
+        height: 26px;
+        fill: var(--accent);
+      }
+
+      .app-info .app-name {
+        font-family: "Instrument Serif", serif;
+        font-size: 1.15rem;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
+      }
+
+      .app-info .app-domain {
+        font-size: 12px;
+        color: var(--text-hint);
+        margin-top: 2px;
+      }
+
+      .consent-heading {
+        font-size: 14px;
+        color: var(--text-secondary);
+        font-weight: 300;
+      }
+
+      .consent-heading strong {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+
+      /* Scope list */
+      .card-body {
+        padding: 1.5rem 2rem;
+      }
+
+      .scopes-label {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--text-hint);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+      }
+
+      .scope-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 1.5rem;
+      }
+
+      .scope-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 14px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        transition: border-color 0.15s;
+      }
+
+      .scope-item:hover {
+        border-color: var(--border-hover);
+      }
+
+      .scope-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: var(--accent-dim);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .scope-icon svg {
+        width: 16px;
+        height: 16px;
+        stroke: var(--accent);
+        fill: none;
+        stroke-width: 1.75;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .scope-text .scope-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+      }
+
+      .scope-text .scope-desc {
+        font-size: 12px;
+        color: var(--text-hint);
+        font-weight: 300;
+      }
+
+      /* Notice */
+      .notice {
+        padding: 10px 14px;
+        background: var(--success-dim);
+        border: 1px solid rgba(74, 222, 128, 0.15);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 0;
+      }
+
+      .notice svg {
+        width: 14px;
+        height: 14px;
+        stroke: var(--success);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      /* Footer actions */
+      .card-footer {
+        padding: 1.25rem 2rem 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .btn {
+        width: 100%;
+        height: 44px;
+        border-radius: 10px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          transform 0.1s,
+          border-color 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn:active {
+        transform: scale(0.99);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-allow {
+        background: var(--accent);
+        border: none;
+        color: #fff;
+      }
+
+      .btn-allow:hover:not(:disabled) {
+        background: var(--accent-hover);
+      }
+
+      .btn-deny {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+      }
+
+      .btn-deny:hover {
+        border-color: var(--danger);
+        color: var(--danger);
+        background: var(--danger-dim);
+      }
+
+      .btn .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: none;
+      }
+
+      .btn.loading .spinner {
+        display: block;
+      }
+      .btn.loading .btn-label {
+        display: none;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .footer-note {
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-hint);
+        line-height: 1.5;
+        margin-top: 4px;
+      }
+
+      /* User strip at top */
+      .user-strip {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 10px 2rem;
+        border-bottom: 1px solid var(--border);
+        gap: 8px;
+      }
+
+      .user-avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--text-secondary);
+      }
+
+      .user-email {
+        font-size: 12px;
+        color: var(--text-hint);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="user-strip">
+        <div class="user-avatar" id="user-initials">?</div>
+        <span class="user-email" id="user-email">Loading...</span>
+      </div>
+
+      <div class="card-header">
+        <div class="app-row">
+          <div class="app-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13 3L4 14h8l-1 7 9-11h-8l1-7z" />
+            </svg>
+          </div>
+          <div class="app-info">
+            <div class="app-name" id="app-name">Nightcode CLI</div>
+            <div class="app-domain" id="app-domain">localhost</div>
+          </div>
+        </div>
+        <p class="consent-heading">
+          <strong id="app-name-inline">Nightcode CLI</strong> is requesting
+          access to your account
+        </p>
+      </div>
+
+      <div class="card-body">
+        <div class="scopes-label">This app will be able to</div>
+
+        <div class="scope-list" id="scope-list">
+          <!-- populated by JS based on ?scope= param -->
+        </div>
+
+        <div class="notice">
+          <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" /></svg>
+          You can revoke access at any time from your account settings
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <button
+          class="btn btn-allow"
+          id="allow-btn"
+          onclick="handleConsent(true)"
+        >
+          <div class="spinner"></div>
+          <span class="btn-label">Allow access</span>
+        </button>
+        <button class="btn btn-deny" onclick="handleConsent(false)">
+          <span class="btn-label">Deny</span>
+        </button>
+        <p class="footer-note">
+          By allowing, you agree to share your account information with this
+          application
+        </p>
+      </div>
+    </div>
+
+    <script>
+      const rawQuery = window.location.search.slice(1);
+      const params = new URLSearchParams(rawQuery);
+      const clientId = params.get("client_id") ?? "";
+      const scopeParam = params.get("scope") ?? "openid email profile";
+      const oauthQuery = rawQuery;
+
+      const SCOPE_META = {
+        openid: {
+          title: "Verify your identity",
+          desc: "Confirm who you are using your account ID",
+          icon: "id",
+        },
+        email: {
+          title: "Read your email address",
+          desc: "Access your primary email for authentication",
+          icon: "mail",
+        },
+        profile: {
+          title: "Read your profile",
+          desc: "Access your name and profile picture",
+          icon: "user",
+        },
+        offline_access: {
+          title: "Stay signed in",
+          desc: "Keep you signed in without re-authenticating",
+          icon: "refresh",
+        },
+      };
+
+      const ICONS = {
+        id: `<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 10h2M16 14h2M6 10c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zM6 14c0-.6.9-1 2-1s2 .4 2 1"/></svg>`,
+        mail: `<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>`,
+        user: `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`,
+        refresh: `<svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`,
+      };
+
+      const scopes = scopeParam.split(" ").filter(Boolean);
+
+      const list = document.getElementById("scope-list");
+      scopes.forEach((scope) => {
+        const meta = SCOPE_META[scope] ?? {
+          title: scope,
+          desc: "Access requested by this application",
+          icon: "id",
+        };
+        const icon = ICONS[meta.icon] ?? ICONS.id;
+        const item = document.createElement("div");
+        item.className = "scope-item";
+        item.innerHTML = `<div class="scope-icon">${icon}</div><div class="scope-text"><div class="scope-title">${meta.title}</div><div class="scope-desc">${meta.desc}</div></div>`;
+        list.appendChild(item);
+      });
+
+      if (clientId) {
+        document.getElementById("app-domain").textContent =
+          clientId.slice(0, 8) + "...";
+      }
+
+      fetch(
+        `/api/auth/oauth2/public-client?client_id=${encodeURIComponent(clientId)}`,
+        { credentials: "include" },
+      )
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.name) {
+            document.getElementById("app-name").textContent = data.name;
+            document.getElementById("app-name-inline").textContent = data.name;
+          }
+        })
+        .catch(() => {});
+
+      fetch("/api/auth/get-session", { credentials: "include" })
+        .then((r) => r.json())
+        .then((data) => {
+          const email = data?.user?.email ?? "";
+          document.getElementById("user-email").textContent = email;
+          document.getElementById("user-initials").textContent = email
+            ? email[0].toUpperCase()
+            : "?";
+        })
+        .catch(() => {});
+
+      async function handleConsent(accept) {
+        const btn = document.getElementById("allow-btn");
+        if (accept) {
+          btn.classList.add("loading");
+          btn.disabled = true;
+        }
+
+        try {
+          const res = await fetch("/api/auth/oauth2/consent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ accept, oauth_query: oauthQuery }),
+          });
+
+          if (res.redirected) {
+            window.location.href = res.url;
+            return;
+          }
+
+          const data = await res.json().catch(() => ({}));
+          if (data?.url) {
+            window.location.href = data.url;
+          } else if (res.ok) {
+            window.location.href = data.redirect ?? "/";
+          } else {
+            alert(data?.message ?? "Something went wrong.");
+          }
+        } catch {
+          alert("Network error.");
+        } finally {
+          btn.classList.remove("loading");
+          btn.disabled = false;
+        }
+      }
+    </script>
+  </body>
+</html>
