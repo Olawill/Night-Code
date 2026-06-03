@@ -95,9 +95,10 @@ export const auth = betterAuth({
 
 export const authenticateOAuthRequest = async (request: Request) => {
   const authorization = request.headers.get("authorization") ?? undefined;
-  const accessToken = authorization?.startsWith("Bearer ")
-    ? authorization.replace("Bearer ", "")
-    : authorization;
+  if (!authorization?.startsWith("Bearer ")) {
+    return null;
+  }
+  const accessToken = authorization.slice(7); // "Bearer ".length === 7
 
   if (!accessToken) return null;
 

@@ -569,7 +569,10 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
           return 0;
         }
 
-        const nextIndex = Math.min(mentionCandidates.length, currentIndex + 1);
+        const nextIndex = Math.min(
+          mentionCandidates.length - 1,
+          currentIndex + 1,
+        );
         const scrollbox = mentionScrollRef.current;
 
         if (scrollbox) {
@@ -653,6 +656,7 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
             }
             keyBindings={TEXTAREA_KEY_BINDINGS}
             onContentChange={handleTextAreaContentChange}
+            onCursorChange={handleTextAreaCursorChange}
             placeholder={`Ask anything... "Fix a bug in the codebase"`}
           />
           <StatusBar />

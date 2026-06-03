@@ -447,7 +447,24 @@
         const icon = ICONS[meta.icon] ?? ICONS.id;
         const item = document.createElement("div");
         item.className = "scope-item";
-        item.innerHTML = `<div class="scope-icon">${icon}</div><div class="scope-text"><div class="scope-title">${meta.title}</div><div class="scope-desc">${meta.desc}</div></div>`;
+
+        const iconEl = document.createElement("div");
+        iconEl.className = "scope-icon";
+        iconEl.innerHTML = icon;
+
+        const textEl = document.createElement("div");
+        textEl.className = "scope-text";
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "scope-title";
+        titleEl.textContent = meta.title;
+
+        const descEl = document.createElement("div");
+        descEl.className = "scope-desc";
+        descEl.textContent = meta.desc;
+
+        textEl.append(titleEl, descEl);
+        item.append(iconEl, textEl);
         list.appendChild(item);
       });
 
