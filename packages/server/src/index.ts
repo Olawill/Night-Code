@@ -3,8 +3,22 @@ import { sentry } from "@sentry/hono/bun";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { auth as betterAuth } from "./lib/auth";
+import { requireAuth } from "./middleware/require-auth";
+import auth from "./routes/auth";
 import chat from "./routes/chat";
 import sessions from "./routes/sessions";
+
+const signInHtml = readFileSync(
+  join(import.meta.dir, "./pages/sign-in.html"),
+  "utf-8",
+);
+const consentHtml = readFileSync(
+  join(import.meta.dir, "./pages/consent.html"),
+  "utf-8",
+);
 
 const app = new Hono();
 
@@ -26,6 +40,17 @@ app.get("/debug-sentry", () => {
   Sentry.metrics.count("test_counter", 1);
   throw new Error("My first Sentry error!");
 });
+
+app.on(["POST", "GET"], "/api/auth/*", (c) => betterAuth.handler(c.req.raw));
+
+// packages/server/src/index.ts
+app.all("/.well-known/*", (c) => {
+  return betterAuth.handler(c.req.raw);
+});
+
+app.get("/sign-in", (c) => c.html(signInHtml));
+
+app.get("/consent", (c) => c.html(consentHtml));
 
 app.onError((error, c) => {
   if (error instanceof HTTPException) {
@@ -52,7 +77,13 @@ app.onError((error, c) => {
   return c.json({ error: "Internal server error" }, 500);
 });
 
-const routes = app.route("/sessions", sessions).route("/chat", chat);
+app.use("/sessions/*", requireAuth);
+app.use("/chat/*", requireAuth);
+
+const routes = app
+  .route("/auth", auth)
+  .route("/sessions", sessions)
+  .route("/chat", chat);
 
 export type AppType = typeof routes;
 

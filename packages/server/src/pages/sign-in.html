@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in — Nightcode</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0a0a0f;
+        --surface: #111118;
+        --surface-2: #1a1a24;
+        --border: rgba(255, 255, 255, 0.07);
+        --border-focus: rgba(120, 100, 255, 0.5);
+        --text-primary: #f0eff8;
+        --text-secondary: #8b8a9a;
+        --text-hint: #55546a;
+        --accent: #7c6aff;
+        --accent-hover: #9080ff;
+        --accent-dim: rgba(124, 106, 255, 0.12);
+        --google-border: rgba(255, 255, 255, 0.1);
+        --error: #ff6b6b;
+        --success: #4ade80;
+      }
+
+      html,
+      body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text-primary);
+        font-family: "DM Sans", sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 100vh;
+      }
+
+      /* Left panel — branding */
+      .panel-left {
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 3rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .panel-left::before {
+        content: "";
+        position: absolute;
+        top: -200px;
+        left: -200px;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(
+          circle,
+          rgba(124, 106, 255, 0.08) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      .panel-left::after {
+        content: "";
+        position: absolute;
+        bottom: -100px;
+        right: -100px;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(
+          circle,
+          rgba(80, 60, 200, 0.06) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .logo-mark {
+        width: 36px;
+        height: 36px;
+        background: var(--accent);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .logo-mark svg {
+        width: 20px;
+        height: 20px;
+        fill: #fff;
+      }
+
+      .logo-text {
+        font-family: "Instrument Serif", serif;
+        font-size: 20px;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+      }
+
+      .panel-left-content {
+        position: relative;
+        z-index: 1;
+      }
+
+      .tagline {
+        font-family: "Instrument Serif", serif;
+        font-size: 2.6rem;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+        color: var(--text-primary);
+        margin-bottom: 1.25rem;
+      }
+
+      .tagline em {
+        color: var(--accent);
+        font-style: italic;
+      }
+
+      .tagline-sub {
+        font-size: 14px;
+        color: var(--text-secondary);
+        font-weight: 300;
+        max-width: 320px;
+        line-height: 1.7;
+      }
+
+      .features {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      .feature {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .feature-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        margin-top: 8px;
+        flex-shrink: 0;
+        opacity: 0.7;
+      }
+
+      .feature-text {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 300;
+      }
+
+      /* Right panel — form */
+      .panel-right {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 2rem;
+      }
+
+      .form-container {
+        width: 100%;
+        max-width: 380px;
+      }
+
+      .form-header {
+        margin-bottom: 2rem;
+      }
+
+      .form-title {
+        font-family: "Instrument Serif", serif;
+        font-size: 1.9rem;
+        letter-spacing: -0.02em;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+      }
+
+      .form-subtitle {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 300;
+      }
+
+      /* Google button */
+      .btn-google {
+        width: 100%;
+        height: 44px;
+        background: transparent;
+        border: 1px solid var(--google-border);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+        text-decoration: none;
+      }
+
+      .btn-google:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.15);
+      }
+
+      .btn-google svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+
+      /* Divider */
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 1.25rem 0;
+      }
+
+      .divider-line {
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      .divider-text {
+        font-size: 11px;
+        color: var(--text-hint);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      /* Form fields */
+      .field {
+        margin-bottom: 14px;
+      }
+
+      .field label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+        letter-spacing: 0.03em;
+      }
+
+      .field input {
+        width: 100%;
+        height: 44px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0 14px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        color: var(--text-primary);
+        outline: none;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+      }
+
+      .field input::placeholder {
+        color: var(--text-hint);
+      }
+
+      .field input:focus {
+        border-color: var(--border-focus);
+        background: rgba(124, 106, 255, 0.04);
+      }
+
+      .field-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+
+      .field-row label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        letter-spacing: 0.03em;
+      }
+
+      .forgot-link {
+        font-size: 12px;
+        color: var(--accent);
+        text-decoration: none;
+        opacity: 0.8;
+      }
+
+      .forgot-link:hover {
+        opacity: 1;
+      }
+
+      /* Submit button */
+      .btn-submit {
+        width: 100%;
+        height: 44px;
+        background: var(--accent);
+        border: none;
+        border-radius: 10px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        color: #fff;
+        cursor: pointer;
+        margin-top: 6px;
+        transition:
+          background 0.15s,
+          transform 0.1s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn-submit:hover {
+        background: var(--accent-hover);
+      }
+      .btn-submit:active {
+        transform: scale(0.99);
+      }
+      .btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-submit .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: none;
+      }
+
+      .btn-submit.loading .spinner {
+        display: block;
+      }
+      .btn-submit.loading .btn-label {
+        display: none;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Toggle sign up */
+      .toggle-row {
+        text-align: center;
+        margin-top: 1.5rem;
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+
+      .toggle-row a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .toggle-row a:hover {
+        text-decoration: underline;
+      }
+
+      /* Error / success banners */
+      .alert {
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        margin-bottom: 14px;
+        display: none;
+      }
+
+      .alert.error {
+        background: rgba(255, 107, 107, 0.1);
+        border: 1px solid rgba(255, 107, 107, 0.25);
+        color: var(--error);
+      }
+
+      .alert.success {
+        background: rgba(74, 222, 128, 0.1);
+        border: 1px solid rgba(74, 222, 128, 0.25);
+        color: var(--success);
+      }
+
+      .alert.show {
+        display: block;
+      }
+
+      /* Tabs */
+      .tabs {
+        display: flex;
+        background: var(--surface-2);
+        border-radius: 10px;
+        padding: 3px;
+        margin-bottom: 1.5rem;
+      }
+
+      .tab {
+        flex: 1;
+        height: 36px;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+
+      .tab.active {
+        background: var(--surface);
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+
+      /* Name field — only visible on sign up */
+      #name-field {
+        display: none;
+      }
+      body.signup #name-field {
+        display: block;
+      }
+      body.signup #toggle-text {
+        display: none;
+      }
+      body.signin #toggle-text {
+        display: none;
+      }
+
+      .signup-toggle {
+        display: none;
+      }
+      body.signup .signup-toggle {
+        display: inline;
+      }
+      body.signup .signin-toggle {
+        display: none;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          grid-template-columns: 1fr;
+        }
+        .panel-left {
+          display: none;
+        }
+        .panel-right {
+          padding: 2rem 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body class="signin">
+    <div class="panel-left">
+      <div class="logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 3L4 14h8l-1 7 9-11h-8l1-7z" />
+          </svg>
+        </div>
+        <span class="logo-text">Nightcode</span>
+      </div>
+
+      <div class="panel-left-content">
+        <h1 class="tagline">Code smarter,<br />ship <em>faster</em></h1>
+        <p class="tagline-sub">
+          Your AI-powered development workspace. Context-aware, always ready.
+        </p>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-dot"></div>
+          <span class="feature-text"
+            >Multi-mode AI assistance: Build, Plan, Review, Test, Doc</span
+          >
+        </div>
+        <div class="feature">
+          <div class="feature-dot"></div>
+          <span class="feature-text"
+            >Full codebase context — no copy-pasting snippets</span
+          >
+        </div>
+        <div class="feature">
+          <div class="feature-dot"></div>
+          <span class="feature-text"
+            >Works in your terminal, browser, and IDE</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-right">
+      <div class="form-container">
+        <div class="form-header">
+          <h2 class="form-title">Welcome back</h2>
+          <p class="form-subtitle">Sign in to continue to Nightcode</p>
+        </div>
+
+        <div class="tabs">
+          <button
+            class="tab active"
+            id="tab-signin"
+            onclick="setMode('signin')"
+          >
+            Sign in
+          </button>
+          <button class="tab" id="tab-signup" onclick="setMode('signup')">
+            Create account
+          </button>
+        </div>
+
+        <div id="alert" class="alert error"></div>
+
+        <a
+          href="/api/auth/sign-in/social?provider=google&callbackURL=__OAUTH_QUERY__"
+          class="btn-google"
+          id="google-btn"
+        >
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              fill="#4285F4"
+            />
+            <path
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              fill="#34A853"
+            />
+            <path
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              fill="#FBBC05"
+            />
+            <path
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              fill="#EA4335"
+            />
+          </svg>
+          Continue with Google
+        </a>
+
+        <div class="divider">
+          <div class="divider-line"></div>
+          <span class="divider-text">or</span>
+          <div class="divider-line"></div>
+        </div>
+
+        <form id="auth-form" onsubmit="handleSubmit(event)">
+          <div class="field" id="name-field">
+            <label for="name">Full name</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              placeholder="Jane Smith"
+              autocomplete="name"
+            />
+          </div>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="you@example.com"
+              autocomplete="email"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <!-- <div class="field-row">
+              <label for="password">Password</label>
+              <a href="#" class="forgot-link" id="forgot-link"
+                >Forgot password?</a
+              >
+            </div> -->
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn-submit" id="submit-btn">
+            <div class="spinner"></div>
+            <span class="btn-label" id="btn-label">Sign in</span>
+          </button>
+        </form>
+
+        <div class="toggle-row">
+          <span class="signin-toggle"
+            >No account?
+            <a
+              href="#"
+              onclick="
+                setMode('signup');
+                return false;
+              "
+              >Create one</a
+            ></span
+          >
+          <span class="signup-toggle"
+            >Already have an account?
+            <a
+              href="#"
+              onclick="
+                setMode('signin');
+                return false;
+              "
+              >Sign in</a
+            ></span
+          >
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const rawQuery = window.location.search.slice(1);
+      // const params = new URLSearchParams(rawQuery);
+      // const clientId = params.get("client_id") ?? "";
+      // const scopeParam = params.get("scope") ?? "openid email profile";
+      const oauthQuery = rawQuery;
+      // const oauthQuery =
+      //   new URLSearchParams(window.location.search).get("oauth_query") ?? "";
+
+      document.getElementById("google-btn").href =
+        `/api/auth/sign-in/social?provider=google&callbackURL=${encodeURIComponent("/api/auth/oauth2/continue")}&oauth_query=${encodeURIComponent(oauthQuery)}`;
+
+      function setMode(mode) {
+        document.body.className = mode;
+        document
+          .getElementById("tab-signin")
+          .classList.toggle("active", mode === "signin");
+        document
+          .getElementById("tab-signup")
+          .classList.toggle("active", mode === "signup");
+        document.getElementById("btn-label").textContent =
+          mode === "signin" ? "Sign in" : "Create account";
+        document.querySelector(".form-title").textContent =
+          mode === "signin" ? "Welcome back" : "Create an account";
+        document.querySelector(".form-subtitle").textContent =
+          mode === "signin"
+            ? "Sign in to continue to Nightcode"
+            : "Start building with Nightcode today";
+        document.getElementById("forgot-link").style.display =
+          mode === "signin" ? "" : "none";
+        document.getElementById("password").autocomplete =
+          mode === "signin" ? "current-password" : "new-password";
+        hideAlert();
+      }
+
+      function showAlert(msg, type = "error") {
+        const el = document.getElementById("alert");
+        el.textContent = msg;
+        el.className = `alert ${type} show`;
+      }
+
+      function hideAlert() {
+        document.getElementById("alert").className = "alert error";
+      }
+
+      async function handleSubmit(e) {
+        e.preventDefault();
+        const btn = document.getElementById("submit-btn");
+        btn.classList.add("loading");
+        btn.disabled = true;
+        hideAlert();
+
+        const isSignup = document.body.classList.contains("signup");
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const name = document.getElementById("name").value;
+
+        const endpoint = isSignup
+          ? "/api/auth/sign-up/email"
+          : "/api/auth/sign-in/email";
+
+        try {
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(
+              isSignup ? { email, password, name } : { email, password },
+            ),
+            credentials: "include",
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            showAlert(
+              data.message ?? "Something went wrong. Please try again.",
+            );
+            return;
+          }
+
+          // After successful auth, re-run the authorize endpoint with the
+          // original OAuth params — better-auth will see the session cookie
+          // and redirect straight to the consent page
+          const params = new URLSearchParams(oauthQuery);
+          params.set("prompt", "consent");
+          window.location.href = `/api/auth/oauth2/authorize?${params.toString()}`;
+        } catch {
+          showAlert("Network error. Please check your connection.");
+        } finally {
+          btn.classList.remove("loading");
+          btn.disabled = false;
+        }
+      }
+    </script>
+  </body>
+</html>
