@@ -1,14 +1,12 @@
 {
   "name": "nightcode",
   "version": "1.0.0",
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
     "dev:cli": "bun run --watch packages/cli/src/index.tsx",
-    "dev:server": "bun run --hot packages/server/src/index.ts"
+    "dev:server": "bun run --hot --env-file=.env packages/server/src/index.ts",
+    "db:migrate": "cd packages/server && BETTER_AUTH_SECRET=migrate BETTER_AUTH_URL=http://localhost:3000 ./node_modules/.bin/auth migrate"
   },
-  "dependencies": {
-    "@better-auth/kysely-adapter": "^1.6.14"
-  }
+  "workspaces": [
+    "packages/*"
+  ]
 }

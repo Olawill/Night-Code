@@ -1,4 +1,9 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import open from "open";
@@ -8,9 +13,22 @@ import { saveAuth } from "./auth";
 const CLIENT_FILE = join(homedir(), ".nightcode", "client.json");
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000;
 
+const log = (msg: string) => {
+  appendFileSync("/tmp/nightcode-debug.log", msg + "\n");
+  console.log(msg);
+};
+
 type OAuthState = {
   nonce: string;
   port: number;
+};
+
+type TokenResponse = {
+  access_token: string;
+  expires_in: number;
+  token_type: string;
+  scope: string;
+  id_token: string;
 };
 
 const toBase64Url = (input: Uint8Array | string) => {
@@ -170,11 +188,13 @@ export const performLogin = async () => {
             throw new Error(details || "Failed to exchange authorization code");
           }
 
-          const tokenData = (await tokenRes.json()) as { access_token: string };
+          const tokenData = (await tokenRes.json()) as TokenResponse;
+          const token = tokenData.id_token ?? tokenData.access_token;
+          // const token = tokenData.access_token;
 
           settled = true;
-          saveAuth({ token: tokenData.access_token });
-          resolve({ token: tokenData.access_token });
+          saveAuth({ token });
+          resolve({ token });
           setTimeout(() => server.stop(), 500);
           return new Response(`Authenticated! You can close this tab.`);
         } catch (error) {
@@ -211,6 +231,10 @@ export const performLogin = async () => {
     authorizeUrl.searchParams.set("prompt", "login consent");
     authorizeUrl.searchParams.set("code_challenge", codeChallenge);
     authorizeUrl.searchParams.set("code_challenge_method", "S256");
+    authorizeUrl.searchParams.set(
+      "resource",
+      process.env.API_URL ?? "http://localhost:3000",
+    );
 
     void open(authorizeUrl.toString());
 

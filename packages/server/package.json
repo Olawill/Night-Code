@@ -1,15 +1,5 @@
 {
   "name": "@nightcode/server",
-  "type": "module",
-  "private": true,
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "scripts": {
-    "dev": "bun run --hot src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
-    "postinstall": "bun run --cwd ../database db:generate"
-  },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.81",
     "@ai-sdk/google": "^3.0.80",
@@ -25,5 +15,15 @@
     "dotenv": "^17.4.2",
     "hono": "^4.12.23",
     "zod": "^4.4.3"
-  }
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "postinstall": "bun run --cwd ../database db:generate"
+  },
+  "type": "module"
 }

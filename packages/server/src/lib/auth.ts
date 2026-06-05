@@ -2,8 +2,11 @@
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { betterAuth } from "better-auth";
 import { memoryAdapter } from "better-auth/adapters/memory";
-import { verifyAccessToken } from "better-auth/oauth2";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+// import { verifyAccessToken } from "better-auth/oauth2";
 import { jwt } from "better-auth/plugins";
+import { homedir } from "node:os";
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error("BETTER_AUTH_SECRET environment variable is required");
@@ -11,6 +14,13 @@ if (!process.env.BETTER_AUTH_SECRET) {
 
 if (!process.env.BETTER_AUTH_URL) {
   throw new Error("BETTER_AUTH_URL environment variable is required");
+}
+
+const AUTH_DIR = join(homedir(), ".nightcode");
+const JWKS_FILE = join(AUTH_DIR, "jwks.json");
+
+if (!existsSync(AUTH_DIR)) {
+  mkdirSync(AUTH_DIR, { mode: 0o700 });
 }
 
 // const clerkClient = createClerkClient({
@@ -35,6 +45,19 @@ if (!process.env.BETTER_AUTH_URL) {
 //   return { userId: auth.userId}
 // }
 
+type JWK = {
+  kid: string;
+  alg: string;
+  kty: string;
+  crv?: string;
+  x?: string;
+  n?: string;
+  e?: string;
+  use?: string;
+};
+
+let cachedJwks: { keys: JWK[] } | null = null;
+
 const db = {
   user: [],
   session: [],
@@ -47,9 +70,17 @@ const db = {
   jwks: [],
 };
 
+// Restore JWKS from disk so tokens survive server restarts
+if (existsSync(JWKS_FILE)) {
+  try {
+    db.jwks = JSON.parse(readFileSync(JWKS_FILE, "utf-8"));
+  } catch {}
+}
+
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,
+  basePath: "/api/auth",
   database: memoryAdapter(db),
   emailAndPassword: {
     enabled: true, // ← this was missing
@@ -75,23 +106,12 @@ export const auth = betterAuth({
   ],
 });
 
-// Create the CLI client at startup
-// const apiUrl = process.env.API_URL ?? "http://localhost:3000";
-
-// const cliClient = await auth.api.adminCreateOAuthClient({
-//   headers: new Headers(),
-//   body: {
-//     client_name: "Nightcode CLI",
-//     redirect_uris: [`${apiUrl}/auth/callback`],
-//     token_endpoint_auth_method: "none",
-//     skip_consent: true,
-//   },
-// });
-
-// console.log("CLI client created:", cliClient.clientId);
-// console.log(
-//   "Add to your .env: BETTER_AUTH_CLI_CLIENT_ID=" + cliClient.clientId,
-// );
+// Persist JWKS keys to disk after they're generated
+setTimeout(() => {
+  if (db.jwks.length > 0) {
+    writeFileSync(JWKS_FILE, JSON.stringify(db.jwks));
+  }
+}, 1000);
 
 export const authenticateOAuthRequest = async (request: Request) => {
   const authorization = request.headers.get("authorization") ?? undefined;
@@ -102,16 +122,87 @@ export const authenticateOAuthRequest = async (request: Request) => {
 
   if (!accessToken) return null;
 
+  // Must be a jWT (has dots)
+  const parts = accessToken.split(".");
+  if (parts.length !== 3) return null;
+
   try {
-    const payload = await verifyAccessToken(accessToken, {
-      verifyOptions: {
-        issuer: process.env.BETTER_AUTH_URL!,
-        audience: process.env.API_URL ?? "http://localhost:3000",
-      },
-    });
+    if (!cachedJwks) {
+      // Fetch JWKS from the local server
+      const jwksRes = await fetch(
+        `${process.env.BETTER_AUTH_URL}/api/auth/jwks`,
+      );
+
+      if (!jwksRes.ok) {
+        console.error("JWKS fetch failed:", jwksRes.status);
+      }
+      cachedJwks = (await jwksRes.json()) as { keys: JWK[] };
+    }
+
+    const [headerB64, payloadB64, signatureB64] = parts as [
+      string,
+      string,
+      string,
+    ];
+
+    // Decode header to find the right key
+    const header = JSON.parse(
+      Buffer.from(headerB64, "base64url").toString(),
+    ) as { kid: string; alg: string };
+
+    const jwk = cachedJwks.keys.find((k: any) => k.kid === header.kid);
+    if (!jwk) {
+      // Key not found — JWKS may have rotated, clear cache and retry once
+      cachedJwks = null;
+      console.error("No matching key found for kid:", header.kid);
+      return null;
+    }
+
+    // Import the public key
+    const publicKey = await crypto.subtle.importKey(
+      "jwk",
+      jwk,
+      { name: "Ed25519" },
+      false,
+      ["verify"],
+    );
+
+    // Verify signature
+    const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
+    const signature = new Uint8Array(Buffer.from(signatureB64, "base64url"));
+    const valid = await crypto.subtle.verify(
+      "Ed25519",
+      publicKey,
+      signature,
+      data,
+    );
+
+    if (!valid) {
+      console.error("Invalid signature");
+      return null;
+    }
+
+    // Decode and validate payload
+    const payload = JSON.parse(
+      Buffer.from(payloadB64, "base64url").toString(),
+    ) as { sub: string; exp: number; iss: string };
+
+    // Check expiry
+    if (payload.exp < Math.floor(Date.now() / 1000)) {
+      console.error("Token expired");
+      return null;
+    }
+
+    // Check issuer
+    if (payload.iss !== `${process.env.BETTER_AUTH_URL}/api/auth`) {
+      console.error("Invalid issuer:", payload.iss);
+      return null;
+    }
+
     if (!payload?.sub) return null;
     return { userId: payload.sub };
-  } catch {
+  } catch (err) {
+    console.error("Token verification failed:", err);
     return null;
   }
 };
