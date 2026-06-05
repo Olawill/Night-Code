@@ -17,7 +17,7 @@ if (!process.env.BETTER_AUTH_URL) {
 }
 
 const AUTH_DIR = join(homedir(), ".nightcode");
-const JWKS_FILE = join(AUTH_DIR, "jwks.json");
+const DB_FILE = join(AUTH_DIR, "db.json");
 
 if (!existsSync(AUTH_DIR)) {
   mkdirSync(AUTH_DIR, { mode: 0o700 });
@@ -58,7 +58,7 @@ type JWK = {
 
 let cachedJwks: { keys: JWK[] } | null = null;
 
-const db = {
+const defaultDb = {
   user: [],
   session: [],
   account: [],
@@ -70,12 +70,26 @@ const db = {
   jwks: [],
 };
 
-// Restore JWKS from disk so tokens survive server restarts
-if (existsSync(JWKS_FILE)) {
-  try {
-    db.jwks = JSON.parse(readFileSync(JWKS_FILE, "utf-8"));
-  } catch {}
+const db: Record<string, any[]> = existsSync(DB_FILE)
+  ? JSON.parse(readFileSync(DB_FILE, "utf-8"))
+  : { ...defaultDb };
+
+for (const key of Object.keys(defaultDb)) {
+  if (!db[key]) db[key] = [];
 }
+
+const persistDb = () =>
+  writeFileSync(DB_FILE, JSON.stringify(db), { mode: 0o600 });
+
+setInterval(persistDb, 10_000);
+process.on("SIGINT", () => {
+  persistDb();
+  process.exit(0);
+});
+process.on("SIGTERM", () => {
+  persistDb();
+  process.exit(0);
+});
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
@@ -106,15 +120,8 @@ export const auth = betterAuth({
   ],
 });
 
-// Persist JWKS keys to disk after they're generated
-setTimeout(() => {
-  if (db.jwks.length > 0) {
-    writeFileSync(JWKS_FILE, JSON.stringify(db.jwks));
-  }
-}, 1000);
-
 export const authenticateOAuthRequest = async (request: Request) => {
-  const authorization = request.headers.get("authorization") ?? undefined;
+  const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer ")) {
     return null;
   }
@@ -150,12 +157,20 @@ export const authenticateOAuthRequest = async (request: Request) => {
       Buffer.from(headerB64, "base64url").toString(),
     ) as { kid: string; alg: string };
 
-    const jwk = cachedJwks.keys.find((k: any) => k.kid === header.kid);
+    let jwk = cachedJwks.keys.find((k) => k.kid === header.kid);
     if (!jwk) {
-      // Key not found — JWKS may have rotated, clear cache and retry once
+      // JWKS may have rotated — clear cache and refetch once
       cachedJwks = null;
-      console.error("No matching key found for kid:", header.kid);
-      return null;
+      const jwksRes = await fetch(
+        `${process.env.BETTER_AUTH_URL}/api/auth/jwks`,
+      );
+      if (!jwksRes.ok) return null;
+      cachedJwks = (await jwksRes.json()) as { keys: JWK[] };
+      jwk = cachedJwks.keys.find((k) => k.kid === header.kid);
+      if (!jwk) {
+        console.error("No matching key found for kid:", header.kid);
+        return null;
+      }
     }
 
     // Import the public key
