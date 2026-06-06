@@ -11,7 +11,6 @@ export const requireAuth = createMiddleware<AuthenticatedEnv>(
   async (c, next) => {
     try {
       const auth = await authenticateOAuthRequest(c.req.raw);
-      console.log({ auth });
 
       if (!auth) {
         return c.json({ error: "Unauthorized. Run /login to continue" }, 401);

@@ -1,5 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
-import { streamText as aiStreamText, stepCountIs } from "ai";
+import {
+  streamText as aiStreamText,
+  stepCountIs,
+  type LanguageModelUsage,
+} from "ai";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
@@ -13,8 +17,11 @@ import {
   type ChatStreamEvent,
   type MessagePart,
 } from "@nightcode/shared";
+import { calculateCreditsForUsage } from "../lib/credits";
 import { isSupportedChatModel, resolveChatModel } from "../lib/models";
+import { ingestAIUsage } from "../lib/polar";
 import type { AuthenticatedEnv } from "../middleware/require-auth";
+import { requireCreditsBalance } from "../middleware/require-credits-balance";
 import { buildSystemPrompt } from "../system-prompt";
 import { createTools } from "../tools";
 
@@ -65,6 +72,7 @@ const getResumableUserMessage = (
 
 type StreamParams = {
   sessionId: string;
+  userId: string;
   model: string;
   cwd: string | null;
   history: { role: "user" | "assistant"; content: string }[];
@@ -72,15 +80,22 @@ type StreamParams = {
   abortController: AbortController;
 };
 
+type IngestUsageForMessageParams = {
+  messageId: string;
+  status: "complete" | "interrupted";
+};
+
 const streamAIResponse = async (
   stream: Parameters<Parameters<typeof streamSSE>[1]>[0],
   params: StreamParams,
 ) => {
-  const { sessionId, model, cwd, history, mode, abortController } = params;
+  const { sessionId, userId, model, cwd, history, mode, abortController } =
+    params;
   const startTime = Date.now();
   const tools = cwd ? createTools(cwd, mode) : undefined;
   const parts: MessagePart[] = [];
   const resolvedModel = resolveChatModel(model);
+  let completedUsage: LanguageModelUsage | null = null;
 
   const persistInterruptedMessage = async () => {
     const fullText = parts
@@ -94,7 +109,7 @@ const streamAIResponse = async (
     const validatedParts: Prisma.InputJsonValue | undefined =
       parts.length > 0 ? messagePartsSchema.parse(parts) : undefined;
 
-    await db.message.create({
+    return db.message.create({
       data: {
         sessionId,
         role: "ASSISTANT",
@@ -108,6 +123,45 @@ const streamAIResponse = async (
     });
   };
 
+  const ingestUsageForMessage = async ({
+    messageId,
+    status,
+  }: IngestUsageForMessageParams) => {
+    if (!completedUsage) return;
+
+    try {
+      const billableUsage = calculateCreditsForUsage({
+        provider: resolvedModel.provider,
+        model: resolvedModel.modelId,
+        usage: completedUsage,
+      });
+
+      await ingestAIUsage({
+        externalCustomerId: userId,
+        eventId: `chat-message:${messageId}`,
+        credits: billableUsage.credits,
+      });
+    } catch (error) {
+      console.error("Failed to ingest to Polar AI usage for chat message", {
+        error,
+        sessionId,
+        messageId,
+        userId,
+      });
+    }
+  };
+
+  const persistInterruptedMessageAndUsage = async () => {
+    const interruptedMessage = await persistInterruptedMessage();
+
+    if (!interruptedMessage) return;
+
+    await ingestUsageForMessage({
+      messageId: interruptedMessage.id,
+      status: "interrupted",
+    });
+  };
+
   try {
     const result = aiStreamText({
       model: resolvedModel.model,
@@ -117,6 +171,9 @@ const streamAIResponse = async (
       stopWhen: tools ? stepCountIs(50) : undefined,
       abortSignal: abortController.signal,
       providerOptions: resolvedModel.providerOptions,
+      onFinish: (event) => {
+        completedUsage = event.totalUsage;
+      },
     });
 
     for await (const part of result.fullStream) {
@@ -209,7 +266,7 @@ const streamAIResponse = async (
     }
 
     if (stream.aborted || abortController.signal.aborted) {
-      await persistInterruptedMessage();
+      await persistInterruptedMessageAndUsage();
       return;
     }
 
@@ -235,6 +292,11 @@ const streamAIResponse = async (
       },
     });
 
+    await ingestUsageForMessage({
+      messageId: assistantMessage.id,
+      status: "complete",
+    });
+
     const doneEvent: ChatStreamEvent = {
       type: "done",
       messageId: assistantMessage.id,
@@ -244,7 +306,7 @@ const streamAIResponse = async (
     await stream.writeSSE({ event: "done", data: JSON.stringify(doneEvent) });
   } catch (error) {
     if (abortController.signal.aborted) {
-      await persistInterruptedMessage();
+      await persistInterruptedMessageAndUsage();
       return;
     }
 
@@ -317,6 +379,7 @@ const app = new Hono<AuthenticatedEnv>()
           try {
             await streamAIResponse(stream, {
               sessionId,
+              userId,
               model: resumableMessage.model,
               cwd: session.cwd,
               history,
@@ -343,7 +406,7 @@ const app = new Hono<AuthenticatedEnv>()
       throw error;
     }
   })
-  .post("/:sessionId", submitValidator, async (c) => {
+  .post("/:sessionId", requireCreditsBalance, submitValidator, async (c) => {
     const sessionId = c.req.param("sessionId");
     const userId = c.get("userId");
 
@@ -387,6 +450,7 @@ const app = new Hono<AuthenticatedEnv>()
 
         await streamAIResponse(stream, {
           sessionId,
+          userId,
           model: data.model,
           cwd: session.cwd,
           history,
