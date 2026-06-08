@@ -17,6 +17,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router";
 
+import { platform } from "node:os";
 import type { Message } from "../hooks/use-chat";
 import { copyToClipboard, readFromClipboard } from "../lib/export-messages";
 import { useDialog } from "../providers/dialog";
@@ -57,6 +58,41 @@ const isWithinCurrentDirectory = (targetPath: string) => {
 
 const isMentionQueryCharacter = (character: string) => {
   return MENTION_QUERY_CHARACTER.test(character);
+};
+
+const getRecordingCommand = (): string[] => {
+  const os = platform();
+  if (os === "darwin") {
+    // macOS — uses sox (brew install sox)
+    return ["sox", "-d", "-t", "wav", "/tmp/nightcode-voice.wav"];
+  }
+  if (os === "win32") {
+    // Windows — uses PowerShell
+    return [
+      "powershell",
+      "-NoProfile",
+      "-Command",
+      `Add-Type -AssemblyName System.Speech; $r = New-Object System.Speech.Recognition.SpeechRecognitionEngine; $r.SetInputToDefaultAudioDevice(); $r.RecognizeAsync()`,
+    ];
+  }
+  // Linux — arecord (ALSA) or parecord (PulseAudio)
+  return ["arecord", "-f", "cd", "-t", "wav", "/tmp/nightcode-voice.wav"];
+};
+
+const checkRecordingSupport = async (): Promise<boolean> => {
+  const os = platform();
+  const tool =
+    os === "darwin" ? "sox" : os === "win32" ? "powershell" : "arecord";
+  try {
+    const proc = Bun.spawn([tool, "--version"], {
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    await proc.exited;
+    return proc.exitCode === 0;
+  } catch {
+    return false;
+  }
 };
 
 const findActiveMention = (
@@ -318,6 +354,7 @@ export const InputBar = ({
   const onSubmitRef = useRef<() => void>(() => {});
   const activeMentionRef = useRef<MentionMatch | null>(null);
   const mentionScrollRef = useRef<ScrollBoxRenderable>(null);
+  const recordingProcessRef = useRef<ReturnType<typeof Bun.spawn> | null>(null);
 
   const renderer = useRenderer();
   const navigate = useNavigate();
@@ -332,6 +369,8 @@ export const InputBar = ({
     MentionCandidate[]
   >([]);
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
+  const [recordingSupported, setRecordingSupported] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   const {
     commandQuery,
@@ -382,6 +421,58 @@ export const InputBar = ({
     },
     [closeMentionMenu, push],
   );
+
+  const startRecording = async () => {
+    const cmd = getRecordingCommand();
+    try {
+      recordingProcessRef.current = Bun.spawn(cmd, {
+        stdout: "ignore",
+        stderr: "ignore",
+      });
+      setIsRecording(true);
+      toast.show({ message: "Recording... press ctrl+r to stop" });
+    } catch {
+      toast.show({
+        variant: "error",
+        message: "Could not start recording. Is arecord/sox installed?",
+      });
+    }
+  };
+
+  const stopRecordingAndTranscribe = async () => {
+    setIsRecording(false);
+    recordingProcessRef.current?.kill();
+    recordingProcessRef.current = null;
+
+    try {
+      // Send to Deepgram
+      const audioData = await Bun.file(
+        "/tmp/nightcode-voice.wav",
+      ).arrayBuffer();
+      const res = await fetch(
+        "https://api.deepgram.com/v1/listen?model=nova-2",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`,
+            "Content-Type": "audio/wav",
+          },
+          body: audioData,
+        },
+      );
+      const data = (await res.json()) as {
+        results: { channels: [{ alternatives: [{ transcript: string }] }] };
+      };
+      const transcript =
+        data.results.channels[0]?.alternatives[0]?.transcript ?? "";
+
+      if (transcript && textareaRef.current) {
+        textareaRef.current.insertText(transcript);
+      }
+    } catch (err) {
+      toast.show({ variant: "error", message: "Voice transcription failed" });
+    }
+  };
 
   const handleTextAreaContentChange = useCallback(() => {
     const textarea = textareaRef.current;
@@ -479,6 +570,10 @@ export const InputBar = ({
     },
     [resolveCommand, handleCommand],
   );
+
+  useEffect(() => {
+    checkRecordingSupport().then(setRecordingSupported);
+  }, []);
 
   // Keep the file picker in sync with the current @mention token
   useEffect(() => {
@@ -586,6 +681,20 @@ export const InputBar = ({
     if (key.name === "tab") {
       key.preventDefault();
       toggleMode();
+    }
+  });
+
+  useKeyboard((key) => {
+    if (disabled) return;
+    if (!isTopLayer("base")) return;
+
+    if ((key.ctrl || key.meta) && key.name === "r") {
+      key.preventDefault();
+      if (isRecording) {
+        void stopRecordingAndTranscribe();
+      } else {
+        void startRecording();
+      }
     }
   });
 
@@ -720,7 +829,30 @@ export const InputBar = ({
             onCursorChange={handleTextAreaCursorChange}
             placeholder={`Ask anything... "Fix a bug in the codebase"`}
           />
-          <StatusBar />
+          <box
+            flexDirection="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <StatusBar />
+            <box flexDirection="row" gap={2} alignItems="center">
+              {isRecording ? (
+                <box flexDirection="row" gap={1} alignItems="center">
+                  <text fg={colors.error}>⏺</text>
+                  <text attributes={TextAttributes.DIM}>
+                    recording... ctrl+r to stop
+                  </text>
+                </box>
+              ) : (
+                recordingSupported && (
+                  <box flexDirection="row" gap={1} alignItems="center">
+                    <text attributes={TextAttributes.DIM}>🎤</text>
+                    <text attributes={TextAttributes.DIM}>ctrl+r</text>
+                  </box>
+                )
+              )}
+            </box>
+          </box>
         </box>
       </box>
     </box>
