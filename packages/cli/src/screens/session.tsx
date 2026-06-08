@@ -1,6 +1,6 @@
 import { useKeyboard } from "@opentui/react";
 import type { InferResponseType } from "hono/client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 
@@ -82,6 +82,12 @@ const SessionChat = ({ session, initialPrompt }: SessionChatProps) => {
     session.id,
     initialMessages,
   );
+
+  // Stable getter so getMessages doesn't cause rerenders
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+  const getMessages = useCallback(() => messagesRef.current, []);
+
   const hasSubmittedInitialPromptRef = useRef(false);
   const lastMessage = messages.at(-1);
 
@@ -113,6 +119,8 @@ const SessionChat = ({ session, initialPrompt }: SessionChatProps) => {
       onSubmit={(text) => submit({ userText: text, mode, model })}
       loading={status === "submitted" || status === "streaming"}
       interruptible={status === "submitted" || status === "streaming"}
+      sessionId={session.id}
+      getMessages={getMessages}
     >
       {messages.map((msg) => (
         <ChatMessage

@@ -17,6 +17,8 @@ import {
 } from "react";
 import { useNavigate } from "react-router";
 
+import type { Message } from "../hooks/use-chat";
+import { copyToClipboard, readFromClipboard } from "../lib/export-messages";
 import { useDialog } from "../providers/dialog";
 import { useKeyboardLayer } from "../providers/keyboard-layer";
 import { usePromptConfig } from "../providers/prompt-config";
@@ -295,6 +297,8 @@ const FileMentionMenu = ({
 type Props = {
   onSubmit: (text: string) => void;
   disabled?: boolean;
+  sessionId?: string;
+  getMessages?: () => Message[];
 };
 
 export const TEXTAREA_KEY_BINDINGS: KeyBinding[] = [
@@ -304,7 +308,12 @@ export const TEXTAREA_KEY_BINDINGS: KeyBinding[] = [
   { name: "enter", shift: true, action: "newline" },
 ];
 
-export const InputBar = ({ onSubmit, disabled }: Props) => {
+export const InputBar = ({
+  onSubmit,
+  disabled,
+  sessionId,
+  getMessages,
+}: Props) => {
   const textareaRef = useRef<TextareaRenderable>(null);
   const onSubmitRef = useRef<() => void>(() => {});
   const activeMentionRef = useRef<MentionMatch | null>(null);
@@ -332,7 +341,7 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
     handleContentChange,
     resolveCommand,
     setSelectedIndex,
-  } = useCommandMenu();
+  } = useCommandMenu({ sessionId });
 
   const showMentionMenu = activeMention !== null;
 
@@ -443,12 +452,24 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
           mode,
           setMode,
           setModel,
+          sessionId,
+          getMessages,
         });
       } else {
         textarea.insertText(command.value + " ");
       }
     },
-    [renderer, toast, dialog, navigate, mode, setMode, setModel],
+    [
+      renderer,
+      toast,
+      dialog,
+      navigate,
+      mode,
+      setMode,
+      setModel,
+      sessionId,
+      getMessages,
+    ],
   );
 
   const handleCommandExecute = useCallback(
@@ -523,6 +544,45 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
   useKeyboard((key) => {
     if (disabled) return;
     if (!isTopLayer("base")) return;
+
+    const isCtrlOrCmd = key.ctrl || key.meta;
+
+    // Ctrl/Cmd+V — paste from clipboard into textarea
+    if (isCtrlOrCmd && key.name === "v") {
+      key.preventDefault();
+      readFromClipboard()
+        .then((text) => {
+          if (text && textareaRef.current) {
+            textareaRef.current.insertText(text);
+          }
+        })
+        .catch(() => {
+          // Silently fail — clipboard may be empty or unavailable
+        });
+      return;
+    }
+
+    // Ctrl/Cmd+C — copy textarea content to clipboard
+    // Only fires when there's no text selection (let native selection copy happen otherwise)
+    // if (isCtrlOrCmd && key.shift && key.name === "C") {
+    if (isCtrlOrCmd && (key.name === "C" || (key.shift && key.name === "c"))) {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const text = textarea.plainText.trim();
+      if (!text) return;
+
+      // Don't preventDefault — let the textarea handle selection copy natively first
+      // Only copy full content if nothing is selected
+      key.preventDefault();
+      copyToClipboard(text)
+        .then(() => {
+          toast.show({ variant: "success", message: "Copied" });
+        })
+        .catch(() => {});
+      return;
+    }
+
     if (key.name === "tab") {
       key.preventDefault();
       toggleMode();
@@ -619,6 +679,7 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
             >
               <CommandMenu
                 query={commandQuery}
+                sessionId={sessionId}
                 selectedIndex={selectedIndex}
                 scrollRef={scrollRef}
                 onSelect={setSelectedIndex}

@@ -15,7 +15,14 @@ type UseCommandMenuReturn = {
   setSelectedIndex: (index: number) => void;
 };
 
-export const useCommandMenu = (): UseCommandMenuReturn => {
+type UseCommandMenuOptions = {
+  sessionId?: string;
+};
+
+export const useCommandMenu = (
+  options: UseCommandMenuOptions = {},
+): UseCommandMenuReturn => {
+  const { sessionId } = options;
   const [textValue, setTextValue] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
@@ -26,8 +33,8 @@ export const useCommandMenu = (): UseCommandMenuReturn => {
     showCommandMenu && textValue.startsWith("/") ? textValue.slice(1) : "";
 
   const filteredCommands = useMemo(
-    () => getFilterCommands(commandQuery),
-    [commandQuery],
+    () => getFilterCommands(commandQuery, { sessionId }),
+    [commandQuery, sessionId],
   );
 
   const close = () => {

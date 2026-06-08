@@ -209,7 +209,10 @@ export const BotMessage = ({
                     <text attributes={TextAttributes.DIM}>
                       <em fg={colors.thinking}>Thinking:</em>{" "}
                     </text>,
-                    <MarkdownRenderer content={part.text} mode={mode} />,
+                    <MarkdownRenderer
+                      content={part.text}
+                      streaming={streaming}
+                    />,
                     !streaming, // auto-collapse when done
                   )}
                 </box>
@@ -265,7 +268,7 @@ export const BotMessage = ({
               return (
                 <box key={`text-${i}`} paddingX={3} width="100%">
                   {/* <text>{part.text}</text> */}
-                  <MarkdownRenderer content={part.text} mode={mode} />
+                  <MarkdownRenderer content={part.text} streaming={streaming} />
                 </box>
               );
             }

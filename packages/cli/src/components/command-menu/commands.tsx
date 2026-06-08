@@ -8,6 +8,7 @@ import {
   SessionsDialogContent,
   ThemeDialogContent,
 } from "../dialogs";
+import { ExportDialogContent } from "../dialogs/export-dialog";
 import type { Command } from "./types";
 
 export const COMMANDS: Command[] = [
@@ -59,6 +60,24 @@ export const COMMANDS: Command[] = [
       ctx.dialog.open({
         title: "Sessions",
         children: <SessionsDialogContent />,
+      });
+    },
+  },
+  {
+    name: "export",
+    description: "Export session",
+    value: "/export",
+    condition: ({ sessionId }) => !!sessionId, // only on session pages
+    action: async (ctx) => {
+      if (!ctx.sessionId || !ctx.getMessages) return;
+      ctx.dialog.open({
+        title: "Export Session",
+        children: (
+          <ExportDialogContent
+            sessionId={ctx.sessionId}
+            getMessages={ctx.getMessages}
+          />
+        ),
       });
     },
   },

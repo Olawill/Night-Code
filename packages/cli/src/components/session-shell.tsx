@@ -1,5 +1,6 @@
 import { TextAttributes } from "@opentui/core";
 
+import type { Message } from "../hooks/use-chat";
 import { usePromptConfig } from "../providers/prompt-config";
 import { InputBar } from "./input-bar";
 import { Spinner } from "./spinner";
@@ -10,6 +11,8 @@ type Props = {
   inputDisabled?: boolean;
   loading?: boolean;
   interruptible?: boolean;
+  sessionId?: string;
+  getMessages?: () => Message[];
 };
 
 export const SessionShell = ({
@@ -18,6 +21,8 @@ export const SessionShell = ({
   inputDisabled = false,
   loading = false,
   interruptible = false,
+  sessionId,
+  getMessages,
 }: Props) => {
   const { mode } = usePromptConfig();
 
@@ -35,7 +40,12 @@ export const SessionShell = ({
         <box>{children}</box>
       </scrollbox>
       <box flexShrink={0}>
-        <InputBar onSubmit={onSubmit} disabled={inputDisabled} />
+        <InputBar
+          onSubmit={onSubmit}
+          disabled={inputDisabled}
+          sessionId={sessionId}
+          getMessages={getMessages}
+        />
       </box>
 
       <box
