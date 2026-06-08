@@ -1,14 +1,10 @@
-import type { Mode } from "@nightcode/database/enums";
+import type { ModeType } from "@nightcode/shared";
 
 type SystemPromptParams = {
-  cwd: string | null;
-  mode: Mode;
+  mode: ModeType;
 };
 
-export const buildSystemPrompt = ({
-  cwd,
-  mode,
-}: SystemPromptParams): string => {
+export const buildSystemPrompt = ({ mode }: SystemPromptParams): string => {
   const parts: string[] = [];
 
   parts.push(
@@ -21,10 +17,6 @@ export const buildSystemPrompt = ({
     - **REVIEW** - Analyze existing code and provide review feedback. Do not modify files unless explicitly requested.
     - **TEST** - Focus on test strategy, coverage analysis, and test implementation.`,
   );
-
-  if (cwd) {
-    parts.push(`\nThe users's project directory is: ${cwd}`);
-  }
 
   if (mode === "PLAN") {
     parts.push(`\
@@ -85,7 +77,7 @@ export const buildSystemPrompt = ({
     `);
   }
 
-  if (cwd && mode === "PLAN") {
+  if (mode === "PLAN") {
     parts.push(`
       ## Tool Usage
       You have these tools available:
@@ -101,7 +93,7 @@ export const buildSystemPrompt = ({
     `);
   }
 
-  if (cwd && mode === "BUILD") {
+  if (mode === "BUILD") {
     parts.push(`
       ## Tool Usage
       You have these tools available:
@@ -121,7 +113,7 @@ export const buildSystemPrompt = ({
     `);
   }
 
-  if (cwd && mode === "DOC") {
+  if (mode === "DOC") {
     parts.push(`
       ## Tool Usage
       You have these tools available:
@@ -142,7 +134,7 @@ export const buildSystemPrompt = ({
     `);
   }
 
-  if (cwd && mode === "REVIEW") {
+  if (mode === "REVIEW") {
     parts.push(`
       ## Tool Usage
       You have these tools available:
@@ -161,7 +153,7 @@ export const buildSystemPrompt = ({
     `);
   }
 
-  if (cwd && mode === "TEST") {
+  if (mode === "TEST") {
     parts.push(`
       ## Tool Usage
       You have these tools available:

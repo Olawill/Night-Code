@@ -1,4 +1,4 @@
-import { Mode } from "@nightcode/database/enums";
+import { Mode, type ModeType } from "@nightcode/shared";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -53,7 +53,7 @@ type ThemeContextValue = {
   colors: ThemeColors;
   currentTheme: Theme;
   setTheme: (theme: Theme) => void;
-  getModeColor: (mode: Mode) => string;
+  getModeColor: (mode: ModeType) => string;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -75,7 +75,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const getModeColor = useCallback(
-    (mode: Mode): string => {
+    (mode: ModeType): string => {
       const { colors } = currentTheme;
       switch (mode) {
         case Mode.BUILD:

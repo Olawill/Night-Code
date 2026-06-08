@@ -1,21 +1,22 @@
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useState } from "react";
 
-import { Mode } from "@nightcode/database/enums";
 import {
   DEFAULT_CHAT_MODEL_ID,
+  Mode,
+  type ModeType,
   type SupportedChatModelId,
 } from "@nightcode/shared";
 
 export type PromptConfigContextValue = {
-  mode: Mode;
+  mode: ModeType;
   toggleMode: () => void;
-  setMode: (mode: Mode) => void;
+  setMode: (mode: ModeType) => void;
   model: SupportedChatModelId;
   setModel: (model: SupportedChatModelId) => void;
 };
 
-export const modes: Mode[] = [
+export const modes: ModeType[] = [
   Mode.BUILD,
   Mode.PLAN,
   Mode.REVIEW,
@@ -38,7 +39,7 @@ export const usePromptConfig = (): PromptConfigContextValue => {
 };
 
 export const PromptConfigProvider = ({ children }: { children: ReactNode }) => {
-  const [mode, setMode] = useState<Mode>(Mode.BUILD);
+  const [mode, setMode] = useState<ModeType>(Mode.BUILD);
   const [model, setModel] = useState<SupportedChatModelId>(
     DEFAULT_CHAT_MODEL_ID,
   );
