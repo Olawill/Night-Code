@@ -106,21 +106,16 @@ export const copyToClipboard = async (text: string): Promise<void> => {
     ["wl-copy"], // Wayland
     ["xclip", "-selection", "clipboard"], // X11 xclip
     ["xsel", "--clipboard", "--input"], // X11 xsel
-    ["xdotool", "type", "--clearmodifiers", text], // fallback
   ];
 
   for (const [cmd, ...args] of linuxCommands) {
     try {
-      const needsStdin = cmd !== "xdotool";
       const proc = Bun.spawn([cmd, ...args], {
-        stdin: needsStdin ? "pipe" : "ignore",
+        stdin: "pipe",
         stdout: "ignore",
         stderr: "ignore",
       });
-      if (needsStdin) {
-        proc.stdin?.write(text);
-        proc.stdin?.end();
-      }
+
       await proc.exited;
       if (proc.exitCode === 0) return;
     } catch {

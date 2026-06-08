@@ -1,5 +1,6 @@
 import { readdir } from "node:fs/promises";
-import { isAbsolute, relative, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { isAbsolute, join, relative, resolve } from "node:path";
 
 import type {
   KeyBinding,
@@ -60,31 +61,37 @@ const isMentionQueryCharacter = (character: string) => {
   return MENTION_QUERY_CHARACTER.test(character);
 };
 
+const VOICE_TMP_PATH = join(tmpdir(), "nightcode-voice.wav");
+
 const getRecordingCommand = (): string[] => {
   const os = platform();
-  if (os === "darwin") {
-    // macOS — uses sox (brew install sox)
-    return ["sox", "-d", "-t", "wav", "/tmp/nightcode-voice.wav"];
-  }
+
   if (os === "win32") {
-    // Windows — uses PowerShell
+    // ffmpeg with DirectShow audio input — produces a WAV file
     return [
-      "powershell",
-      "-NoProfile",
-      "-Command",
-      `Add-Type -AssemblyName System.Speech; $r = New-Object System.Speech.Recognition.SpeechRecognitionEngine; $r.SetInputToDefaultAudioDevice(); $r.RecognizeAsync()`,
+      "ffmpeg",
+      "-f",
+      "dshow",
+      "-i",
+      "audio=@device_cm_{33D9A762-90C8-11D0-BD43-00A0C911CE86}\\wave_{default}",
+      "-y",
+      VOICE_TMP_PATH,
     ];
   }
-  // Linux — arecord (ALSA) or parecord (PulseAudio)
-  return ["arecord", "-f", "cd", "-t", "wav", "/tmp/nightcode-voice.wav"];
+
+  if (os === "darwin") {
+    return ["sox", "-d", "-t", "wav", VOICE_TMP_PATH];
+  }
+
+  // Linux
+  return ["arecord", "-f", "cd", "-t", "wav", VOICE_TMP_PATH];
 };
 
 const checkRecordingSupport = async (): Promise<boolean> => {
   const os = platform();
-  const tool =
-    os === "darwin" ? "sox" : os === "win32" ? "powershell" : "arecord";
+  const tool = os === "darwin" ? "sox" : os === "win32" ? "ffmpeg" : "arecord";
   try {
-    const proc = Bun.spawn([tool, "--version"], {
+    const proc = Bun.spawn([tool, "-version"], {
       stdout: "ignore",
       stderr: "ignore",
     });
@@ -94,7 +101,6 @@ const checkRecordingSupport = async (): Promise<boolean> => {
     return false;
   }
 };
-
 const findActiveMention = (
   text: string,
   cursorOffset: number,
@@ -445,19 +451,28 @@ export const InputBar = ({
     recordingProcessRef.current = null;
 
     try {
+      const apiKey = process.env.DEEPGRAM_API_KEY;
+
+      if (!apiKey) {
+        toast.show({
+          variant: "error",
+          message: "DEEPGRAM_API_KEY environment variable not set",
+        });
+        return;
+      }
+
       // Send to Deepgram
-      const audioData = await Bun.file(
-        "/tmp/nightcode-voice.wav",
-      ).arrayBuffer();
+      const audioData = await Bun.file(VOICE_TMP_PATH).arrayBuffer();
       const res = await fetch(
         "https://api.deepgram.com/v1/listen?model=nova-2",
         {
           method: "POST",
           headers: {
-            Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`,
+            Authorization: `Token ${apiKey}`,
             "Content-Type": "audio/wav",
           },
           body: audioData,
+          signal: AbortSignal.timeout(30000), // 30s timeout
         },
       );
       const data = (await res.json()) as {
@@ -466,7 +481,7 @@ export const InputBar = ({
       const transcript =
         data.results.channels[0]?.alternatives[0]?.transcript ?? "";
 
-      if (transcript && textareaRef.current) {
+      if (transcript.trim() && textareaRef.current) {
         textareaRef.current.insertText(transcript);
       }
     } catch (err) {
@@ -657,9 +672,10 @@ export const InputBar = ({
       return;
     }
 
-    // Ctrl/Cmd+C — copy textarea content to clipboard
-    // Only fires when there's no text selection (let native selection copy happen otherwise)
-    // if (isCtrlOrCmd && key.shift && key.name === "C") {
+    // Ctrl/Cmd+Shift+C — copy full textarea content to clipboard
+    // When no selection exists, intercept and copy full content.
+    // When a selection exists we can't detect it via TextareaRenderable,
+    // so we always copy full content and show a toast on success.
     if (isCtrlOrCmd && (key.name === "C" || (key.shift && key.name === "c"))) {
       const textarea = textareaRef.current;
       if (!textarea) return;
@@ -667,8 +683,10 @@ export const InputBar = ({
       const text = textarea.plainText.trim();
       if (!text) return;
 
-      // Don't preventDefault — let the textarea handle selection copy natively first
-      // Only copy full content if nothing is selected
+      // If the renderer has an active selection, don't intercept —
+      // let opentui handle copying the selected text natively
+      if (renderer.hasSelection) return;
+
       key.preventDefault();
       copyToClipboard(text)
         .then(() => {

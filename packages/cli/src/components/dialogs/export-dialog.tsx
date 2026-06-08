@@ -163,10 +163,14 @@ export const ExportDialogContent = ({
           : formatMessagesAsText(messages);
 
       try {
+        // Strip extension if user already included it
+        const cleanFilename = filename.endsWith(selectedOption.extension)
+          ? filename.slice(0, -selectedOption.extension.length)
+          : filename;
         const filepath = await saveToFile(
           formatted,
           sessionId,
-          `${filename}${selectedOption.extension}`,
+          `${cleanFilename}${selectedOption.extension}`,
         );
         toast.show({ variant: "success", message: `Saved to ${filepath}` });
       } catch (err) {
