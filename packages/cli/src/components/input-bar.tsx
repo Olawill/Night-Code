@@ -1,5 +1,6 @@
 import { readdir } from "node:fs/promises";
-import { isAbsolute, relative, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { isAbsolute, join, relative, resolve } from "node:path";
 
 import type {
   KeyBinding,
@@ -17,6 +18,9 @@ import {
 } from "react";
 import { useNavigate } from "react-router";
 
+import { platform } from "node:os";
+import type { Message } from "../hooks/use-chat";
+import { copyToClipboard, readFromClipboard } from "../lib/export-messages";
 import { useDialog } from "../providers/dialog";
 import { useKeyboardLayer } from "../providers/keyboard-layer";
 import { usePromptConfig } from "../providers/prompt-config";
@@ -57,6 +61,46 @@ const isMentionQueryCharacter = (character: string) => {
   return MENTION_QUERY_CHARACTER.test(character);
 };
 
+const VOICE_TMP_PATH = join(tmpdir(), "nightcode-voice.wav");
+
+const getRecordingCommand = (): string[] => {
+  const os = platform();
+
+  if (os === "win32") {
+    // ffmpeg with DirectShow audio input — produces a WAV file
+    return [
+      "ffmpeg",
+      "-f",
+      "dshow",
+      "-i",
+      "audio=@device_cm_{33D9A762-90C8-11D0-BD43-00A0C911CE86}\\wave_{default}",
+      "-y",
+      VOICE_TMP_PATH,
+    ];
+  }
+
+  if (os === "darwin") {
+    return ["sox", "-d", "-t", "wav", VOICE_TMP_PATH];
+  }
+
+  // Linux
+  return ["arecord", "-f", "cd", "-t", "wav", VOICE_TMP_PATH];
+};
+
+const checkRecordingSupport = async (): Promise<boolean> => {
+  const os = platform();
+  const tool = os === "darwin" ? "sox" : os === "win32" ? "ffmpeg" : "arecord";
+  try {
+    const proc = Bun.spawn([tool, "-version"], {
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    await proc.exited;
+    return proc.exitCode === 0;
+  } catch {
+    return false;
+  }
+};
 const findActiveMention = (
   text: string,
   cursorOffset: number,
@@ -295,6 +339,8 @@ const FileMentionMenu = ({
 type Props = {
   onSubmit: (text: string) => void;
   disabled?: boolean;
+  sessionId?: string;
+  getMessages?: () => Message[];
 };
 
 export const TEXTAREA_KEY_BINDINGS: KeyBinding[] = [
@@ -304,11 +350,17 @@ export const TEXTAREA_KEY_BINDINGS: KeyBinding[] = [
   { name: "enter", shift: true, action: "newline" },
 ];
 
-export const InputBar = ({ onSubmit, disabled }: Props) => {
+export const InputBar = ({
+  onSubmit,
+  disabled,
+  sessionId,
+  getMessages,
+}: Props) => {
   const textareaRef = useRef<TextareaRenderable>(null);
   const onSubmitRef = useRef<() => void>(() => {});
   const activeMentionRef = useRef<MentionMatch | null>(null);
   const mentionScrollRef = useRef<ScrollBoxRenderable>(null);
+  const recordingProcessRef = useRef<ReturnType<typeof Bun.spawn> | null>(null);
 
   const renderer = useRenderer();
   const navigate = useNavigate();
@@ -323,6 +375,8 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
     MentionCandidate[]
   >([]);
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
+  const [recordingSupported, setRecordingSupported] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   const {
     commandQuery,
@@ -332,7 +386,7 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
     handleContentChange,
     resolveCommand,
     setSelectedIndex,
-  } = useCommandMenu();
+  } = useCommandMenu({ sessionId });
 
   const showMentionMenu = activeMention !== null;
 
@@ -373,6 +427,67 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
     },
     [closeMentionMenu, push],
   );
+
+  const startRecording = async () => {
+    const cmd = getRecordingCommand();
+    try {
+      recordingProcessRef.current = Bun.spawn(cmd, {
+        stdout: "ignore",
+        stderr: "ignore",
+      });
+      setIsRecording(true);
+      toast.show({ message: "Recording... press ctrl+r to stop" });
+    } catch {
+      toast.show({
+        variant: "error",
+        message: "Could not start recording. Is arecord/sox installed?",
+      });
+    }
+  };
+
+  const stopRecordingAndTranscribe = async () => {
+    setIsRecording(false);
+    recordingProcessRef.current?.kill();
+    recordingProcessRef.current = null;
+
+    try {
+      const apiKey = process.env.DEEPGRAM_API_KEY;
+
+      if (!apiKey) {
+        toast.show({
+          variant: "error",
+          message: "DEEPGRAM_API_KEY environment variable not set",
+        });
+        return;
+      }
+
+      // Send to Deepgram
+      const audioData = await Bun.file(VOICE_TMP_PATH).arrayBuffer();
+      const res = await fetch(
+        "https://api.deepgram.com/v1/listen?model=nova-2",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Token ${apiKey}`,
+            "Content-Type": "audio/wav",
+          },
+          body: audioData,
+          signal: AbortSignal.timeout(30000), // 30s timeout
+        },
+      );
+      const data = (await res.json()) as {
+        results: { channels: [{ alternatives: [{ transcript: string }] }] };
+      };
+      const transcript =
+        data.results.channels[0]?.alternatives[0]?.transcript ?? "";
+
+      if (transcript.trim() && textareaRef.current) {
+        textareaRef.current.insertText(transcript);
+      }
+    } catch (err) {
+      toast.show({ variant: "error", message: "Voice transcription failed" });
+    }
+  };
 
   const handleTextAreaContentChange = useCallback(() => {
     const textarea = textareaRef.current;
@@ -443,12 +558,24 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
           mode,
           setMode,
           setModel,
+          sessionId,
+          getMessages,
         });
       } else {
         textarea.insertText(command.value + " ");
       }
     },
-    [renderer, toast, dialog, navigate, mode, setMode, setModel],
+    [
+      renderer,
+      toast,
+      dialog,
+      navigate,
+      mode,
+      setMode,
+      setModel,
+      sessionId,
+      getMessages,
+    ],
   );
 
   const handleCommandExecute = useCallback(
@@ -458,6 +585,10 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
     },
     [resolveCommand, handleCommand],
   );
+
+  useEffect(() => {
+    checkRecordingSupport().then(setRecordingSupported);
+  }, []);
 
   // Keep the file picker in sync with the current @mention token
   useEffect(() => {
@@ -523,9 +654,65 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
   useKeyboard((key) => {
     if (disabled) return;
     if (!isTopLayer("base")) return;
+
+    const isCtrlOrCmd = key.ctrl || key.meta;
+
+    // Ctrl/Cmd+V — paste from clipboard into textarea
+    if (isCtrlOrCmd && key.name === "v") {
+      key.preventDefault();
+      readFromClipboard()
+        .then((text) => {
+          if (text && textareaRef.current) {
+            textareaRef.current.insertText(text);
+          }
+        })
+        .catch(() => {
+          // Silently fail — clipboard may be empty or unavailable
+        });
+      return;
+    }
+
+    // Ctrl/Cmd+Shift+C — copy full textarea content to clipboard
+    // When no selection exists, intercept and copy full content.
+    // When a selection exists we can't detect it via TextareaRenderable,
+    // so we always copy full content and show a toast on success.
+    if (isCtrlOrCmd && (key.name === "C" || (key.shift && key.name === "c"))) {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const text = textarea.plainText.trim();
+      if (!text) return;
+
+      // If the renderer has an active selection, don't intercept —
+      // let opentui handle copying the selected text natively
+      if (renderer.hasSelection) return;
+
+      key.preventDefault();
+      copyToClipboard(text)
+        .then(() => {
+          toast.show({ variant: "success", message: "Copied" });
+        })
+        .catch(() => {});
+      return;
+    }
+
     if (key.name === "tab") {
       key.preventDefault();
       toggleMode();
+    }
+  });
+
+  useKeyboard((key) => {
+    if (disabled) return;
+    if (!isTopLayer("base")) return;
+
+    if ((key.ctrl || key.meta) && key.name === "r") {
+      key.preventDefault();
+      if (isRecording) {
+        void stopRecordingAndTranscribe();
+      } else {
+        void startRecording();
+      }
     }
   });
 
@@ -619,6 +806,7 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
             >
               <CommandMenu
                 query={commandQuery}
+                sessionId={sessionId}
                 selectedIndex={selectedIndex}
                 scrollRef={scrollRef}
                 onSelect={setSelectedIndex}
@@ -659,7 +847,30 @@ export const InputBar = ({ onSubmit, disabled }: Props) => {
             onCursorChange={handleTextAreaCursorChange}
             placeholder={`Ask anything... "Fix a bug in the codebase"`}
           />
-          <StatusBar />
+          <box
+            flexDirection="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <StatusBar />
+            <box flexDirection="row" gap={2} alignItems="center">
+              {isRecording ? (
+                <box flexDirection="row" gap={1} alignItems="center">
+                  <text fg={colors.error}>⏺</text>
+                  <text attributes={TextAttributes.DIM}>
+                    recording... ctrl+r to stop
+                  </text>
+                </box>
+              ) : (
+                recordingSupported && (
+                  <box flexDirection="row" gap={1} alignItems="center">
+                    <text attributes={TextAttributes.DIM}>🎤</text>
+                    <text attributes={TextAttributes.DIM}>ctrl+r</text>
+                  </box>
+                )
+              )}
+            </box>
+          </box>
         </box>
       </box>
     </box>

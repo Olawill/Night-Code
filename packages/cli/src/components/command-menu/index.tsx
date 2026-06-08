@@ -16,6 +16,7 @@ const COMMAND_COL_WIDTH =
 
 type CommandMenuProps = {
   query: string;
+  sessionId: string | undefined;
   selectedIndex: number;
   scrollRef: RefObject<ScrollBoxRenderable | null>;
   onSelect: (index: number) => void;
@@ -24,13 +25,14 @@ type CommandMenuProps = {
 
 export const CommandMenu = ({
   query,
+  sessionId,
   selectedIndex,
   scrollRef,
   onSelect,
   onExecute,
 }: CommandMenuProps) => {
   const { colors } = useTheme();
-  const filtered = getFilterCommands(query);
+  const filtered = getFilterCommands(query, { sessionId });
   const visibleHeight = Math.min(filtered.length, MAX_VISIBLE_ITEMS);
 
   if (filtered.length === 0) {
