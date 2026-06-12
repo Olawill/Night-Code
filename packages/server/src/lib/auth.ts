@@ -5,16 +5,17 @@ import { memoryAdapter } from "better-auth/adapters/memory";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 // import { verifyAccessToken } from "better-auth/oauth2";
+import { env } from "@nightcode/shared";
 import { jwt } from "better-auth/plugins";
 import { homedir } from "node:os";
 
-if (!process.env.BETTER_AUTH_SECRET) {
-  throw new Error("BETTER_AUTH_SECRET environment variable is required");
-}
+// if (!env.BETTER_AUTH_SECRET) {
+//   throw new Error("BETTER_AUTH_SECRET environment variable is required");
+// }
 
-if (!process.env.BETTER_AUTH_URL) {
-  throw new Error("BETTER_AUTH_URL environment variable is required");
-}
+// if (!env.BETTER_AUTH_URL) {
+//   throw new Error("BETTER_AUTH_URL environment variable is required");
+// }
 
 const AUTH_DIR = join(homedir(), ".nightcode");
 const DB_FILE = join(AUTH_DIR, "db.json");
@@ -24,8 +25,8 @@ if (!existsSync(AUTH_DIR)) {
 }
 
 // const clerkClient = createClerkClient({
-//   secretKey: process.env.CLERK_SECRET_KEY,
-//   publishableKey: process.env.CLERK_PUBLISHABLE_KEY
+//   secretKey: env.CLERK_SECRET_KEY,
+//   publishableKey: env.CLERK_PUBLISHABLE_KEY
 // })
 
 // export const authenticateOAuthRequest = async (request: Request) => {
@@ -92,8 +93,8 @@ process.on("SIGTERM", () => {
 });
 
 export const auth = betterAuth({
-  secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL,
+  secret: env.BETTER_AUTH_SECRET,
+  baseURL: env.BETTER_AUTH_URL,
   basePath: "/api/auth",
   database: memoryAdapter(db),
   emailAndPassword: {
@@ -101,8 +102,8 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: env.GOOGLE_CLIENT_ID!,
+      clientSecret: env.GOOGLE_CLIENT_SECRET!,
     },
   },
   disabledPaths: ["/token"],
@@ -112,7 +113,7 @@ export const auth = betterAuth({
       loginPage: "/sign-in",
       consentPage: "/consent",
       scopes: ["openid", "email", "profile"],
-      validAudiences: [process.env.API_URL ?? "http://localhost:3000"],
+      validAudiences: [env.API_URL ?? "http://localhost:3000"],
       allowDynamicClientRegistration: true,
       allowUnauthenticatedClientRegistration: true,
       allowPublicClientPrelogin: true,
@@ -136,9 +137,7 @@ export const authenticateOAuthRequest = async (request: Request) => {
   try {
     if (!cachedJwks) {
       // Fetch JWKS from the local server
-      const jwksRes = await fetch(
-        `${process.env.BETTER_AUTH_URL}/api/auth/jwks`,
-      );
+      const jwksRes = await fetch(`${env.BETTER_AUTH_URL}/api/auth/jwks`);
 
       if (!jwksRes.ok) {
         console.error("JWKS fetch failed:", jwksRes.status);
@@ -161,9 +160,7 @@ export const authenticateOAuthRequest = async (request: Request) => {
     if (!jwk) {
       // JWKS may have rotated — clear cache and refetch once
       cachedJwks = null;
-      const jwksRes = await fetch(
-        `${process.env.BETTER_AUTH_URL}/api/auth/jwks`,
-      );
+      const jwksRes = await fetch(`${env.BETTER_AUTH_URL}/api/auth/jwks`);
       if (!jwksRes.ok) return null;
       cachedJwks = (await jwksRes.json()) as { keys: JWK[] };
       jwk = cachedJwks.keys.find((k) => k.kid === header.kid);
@@ -209,7 +206,7 @@ export const authenticateOAuthRequest = async (request: Request) => {
     }
 
     // Check issuer
-    if (payload.iss !== `${process.env.BETTER_AUTH_URL}/api/auth`) {
+    if (payload.iss !== `${env.BETTER_AUTH_URL}/api/auth`) {
       console.error("Invalid issuer:", payload.iss);
       return null;
     }

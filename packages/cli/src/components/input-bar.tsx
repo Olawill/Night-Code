@@ -18,6 +18,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router";
 
+import { env } from "@nightcode/shared";
 import { platform } from "node:os";
 import type { Message } from "../hooks/use-chat";
 import { copyToClipboard, readFromClipboard } from "../lib/export-messages";
@@ -451,7 +452,7 @@ export const InputBar = ({
     recordingProcessRef.current = null;
 
     try {
-      const apiKey = process.env.DEEPGRAM_API_KEY;
+      const apiKey = env.DEEPGRAM_API_KEY;
 
       if (!apiKey) {
         toast.show({
@@ -669,6 +670,12 @@ export const InputBar = ({
         .catch(() => {
           // Silently fail — clipboard may be empty or unavailable
         });
+      return;
+    }
+
+    if (isCtrlOrCmd && key.name === "l") {
+      key.preventDefault();
+      renderer.console.toggle();
       return;
     }
 

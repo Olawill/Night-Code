@@ -1,6 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { config } from "dotenv";
 import path from "path";
+// import { env } from "@nightcode/shared";
 import { PrismaClient } from "../src/generated/prisma/client";
 
 config({

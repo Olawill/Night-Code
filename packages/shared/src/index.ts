@@ -19,3 +19,5 @@ export {
   type ModeType,
   type ToolContracts,
 } from "./schemas";
+
+export { env } from "./env";

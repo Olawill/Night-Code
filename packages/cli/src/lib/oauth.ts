@@ -8,6 +8,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import open from "open";
 
+import { env } from "@nightcode/shared";
 import { saveAuth } from "./auth";
 
 const CLIENT_FILE = join(homedir(), ".nightcode", "client.json");
@@ -103,15 +104,15 @@ const getOrRegisterClient = async (apiUrl: string): Promise<string> => {
 };
 
 export const performLogin = async () => {
-  // const clerkFrontendApi = process.env.CLERK_FRONTEND_API;
-  // const clientId = process.env.CLERK_OAUTH_CLIENT_ID;
-  // const apiUrl = process.env.API_URL ?? "http://localhost:3000";
+  // const clerkFrontendApi = env.CLERK_FRONTEND_API;
+  // const clientId = env.CLERK_OAUTH_CLIENT_ID;
+  // const apiUrl = env.API_URL ?? "http://localhost:3000";
 
   // if (!clerkFrontendApi) throw new Error("CLERK_FRONTEND_API not set");
   // if (!clientId) throw new Error("CLERK_OAUTH_CLIENT_ID not set");
 
-  const authUrl = process.env.BETTER_AUTH_URL;
-  const apiUrl = process.env.API_URL ?? "http://localhost:3000";
+  const authUrl = env.BETTER_AUTH_URL;
+  const apiUrl = env.API_URL ?? "http://localhost:3000";
 
   const clientId = await getOrRegisterClient(apiUrl);
 
@@ -233,7 +234,7 @@ export const performLogin = async () => {
     authorizeUrl.searchParams.set("code_challenge_method", "S256");
     authorizeUrl.searchParams.set(
       "resource",
-      process.env.API_URL ?? "http://localhost:3000",
+      env.API_URL ?? "http://localhost:3000",
     );
 
     void open(authorizeUrl.toString());

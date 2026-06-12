@@ -36,6 +36,7 @@
     "packages/database": {
       "name": "@nightcode/database",
       "dependencies": {
+        "@nightcode/shared": "workspace:*",
         "@prisma/adapter-pg": "^7.8.0",
         "@prisma/client": "^7.8.0",
         "dotenv": "^17.4.2",
@@ -69,6 +70,7 @@
       "name": "@nightcode/shared",
       "dependencies": {
         "ai": "^6.0.197",
+        "dotenv": "^17.4.2",
         "zod": "^4.4.3",
       },
     },
